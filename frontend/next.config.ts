@@ -1,8 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Keep src/pages available for view components without exposing them as routes.
-  pageExtensions: ["route.tsx", "route.ts"],
+  allowedDevOrigins: ["sinavigator.adv.ro"],
   turbopack: {
     rules: {
       "globals.css": {
