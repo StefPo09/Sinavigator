@@ -1,0 +1,8 @@
+.venv/
+
+data/*
+!data/.gitkeep
+
+kernels/*
+!kernels/.gitkeep
+!kernels/meta.tm
