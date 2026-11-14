@@ -1,9 +1,5 @@
 'use client';
 
-import '@fontsource-variable/jetbrains-mono';
-import '@fontsource-variable/space-grotesk';
-import './styles.css';
-
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { fixture, loadBundle, type LoadResult } from '@/lib/data/load';
 import type { Bundle } from '@/lib/data/types';
@@ -13,14 +9,15 @@ import { fmtUtcMs } from '@/lib/logic/format';
 import { findOptions, type AltOption } from '@/lib/logic/recommend';
 import { catalog, defaults, find, startsFor, type Sel } from '@/lib/logic/scenarios';
 import { clampTo, coverage, inScenario, type Speed } from '@/lib/logic/timeline';
-import { SistemView } from '../../pages/Sistem';
-import { SuprafataView } from '../../pages/Suprafata';
-import { ZoneAterizareView } from '../../pages/ZoneAterizare';
-import type { Trust } from '../zone/DecisionSummary';
-import type { Side } from '../zone/ScenarioCards';
-import type { Marker, Perspective, WS } from './types';
+import { SistemView } from './Sistem';
+import { SuprafataView } from './Suprafata';
+import { ZoneAterizareView } from './ZoneAterizare';
+import type { Trust } from '@/components/zone/DecisionSummary';
+import type { Side } from '@/components/zone/ScenarioCards';
+import type { Marker, Perspective, WS } from '@/components/shared/types';
 import { LANDING_SITES } from '@/lib/data/landingSites';
-import { detectQuality, QUALITY_TEXT, type Quality } from './quality';
+import { detectQuality, QUALITY_TEXT, type Quality } from '@/components/shared/quality';
+import { Brand, WorkspaceNavigation } from '@/components/shared/WorkspaceNavigation';
 
 const H = 3_600_000;
 
@@ -43,16 +40,6 @@ export default function WorkspaceRoot() {
   if (res.status === 'invalid')
     return <InvalidData errors={res.errors} onRetry={load} onDemo={() => setRes(fixture('Se afișează date demonstrative etichetate, pentru că fișierul de date nu a trecut validarea.'))} />;
   return <Workspace key={`${res.origin}-${res.bundle.generatedAt}`} bundle={res.bundle} origin={res.origin} reason={res.reason} warnings={res.warnings} />;
-}
-
-function Brand() {
-  return (
-    <div className="brand">
-      <span className="brand-orbit" aria-hidden="true" />
-      <h1>Sinavigator</h1>
-      <p>Observatorul tău lunar</p>
-    </div>
-  );
 }
 
 function Skeleton() {
@@ -377,11 +364,6 @@ function Workspace({ bundle, origin, reason, warnings }: { bundle: Bundle; origi
   };
 
   const site = A?.site ?? cat.sites.find((s) => s.id === selA.siteId);
-  const perspectives: { id: Perspective; label: string }[] = [
-    { id: 'sistem', label: 'Sistem solar' },
-    { id: 'zone', label: 'Lună' },
-    { id: 'suprafata', label: 'Suprafață' },
-  ];
   const title = {
     sistem: 'Soare, Pământ și Lună',
     zone: 'Lună · Locuri de aterizare',
@@ -398,28 +380,15 @@ function Workspace({ bundle, origin, reason, warnings }: { bundle: Bundle; origi
       <button type="button" className="skip" onClick={() => mainRef.current?.focus()}>
         Sari la conținut
       </button>
-      <aside className="workspace-sidebar min-w-0">
-        <Brand />
-        <nav className="workspace-nav" aria-label="Perspective">
-          <p className="k">Spațiu de lucru</p>
-          {perspectives.map(({ id, label }) => (
-            <button key={id} type="button" onClick={() => go(id)} aria-current={id === perspective ? 'page' : undefined} disabled={id === perspective || !!flight || fading || (perspective === 'zone' && id === 'suprafata' && !landing)}>
-              {label}
-            </button>
-          ))}
-          {perspective !== 'sistem' && (
-            <div className="nav-group" role="group" aria-label="Locuri lunare">
-              <p className="k">Locuri de aterizare</p>
-              {LANDING_SITES.map(({ id, name }) => (
-                <button key={id} type="button" aria-pressed={landingId === id} disabled={!!flight || fading} onClick={() => selectLanding(id)}>
-                  <span className="nav-dot" aria-hidden="true" />
-                  {name}
-                </button>
-              ))}
-            </div>
-          )}
-        </nav>
-      </aside>
+      <WorkspaceNavigation
+        perspective={perspective}
+        landingId={landingId}
+        hasLanding={!!landing}
+        flight={flight}
+        fading={fading}
+        onNavigate={go}
+        onSelectLanding={selectLanding}
+      />
       <div className="min-w-0">
         <header className="workspace-header">
           <h2>{title}</h2>

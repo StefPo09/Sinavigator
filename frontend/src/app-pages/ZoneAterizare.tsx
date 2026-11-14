@@ -2,11 +2,7 @@
 
 // Perspectiva 2 — Luna: clic pe un punct de pe glob → camera zboară spre el → „Suprafață”.
 // Comparația Plan A / Alternativa B se deschide într-un panou glisant („Analiză”).
-// Exportul implicit este ruta /ZoneAterizare creată de Next.js (Pages Router): redirecționează
-// spre spațiul de lucru unic, ca starea să rămână comună.
-
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { LANDING_SITES } from '@/lib/data/landingSites';
 import { TimeBar } from '../components/shared/TimeBar';
@@ -134,16 +130,5 @@ export function ZoneAterizareView({ ws }: { ws: WS }) {
         </div>
       </section>
     </div>
-  );
-}
-
-export default function ZoneAterizareRoute() {
-  useEffect(() => {
-    window.location.replace('/?p=zone');
-  }, []);
-  return (
-    <p style={{ padding: 24, fontFamily: 'system-ui', color: '#f3f6fa', background: '#0b1220', minHeight: '100vh', margin: 0 }}>
-      Se deschide perspectiva „Lună”… <Link href="/?p=zone" style={{ color: '#79bfff' }}>Continuă</Link>
-    </p>
   );
 }

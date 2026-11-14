@@ -1,11 +1,7 @@
 'use client';
 
 // Perspectiva 3 — Explorarea suprafeței zonei selectate, exact la zona și momentul alese.
-// Exportul implicit este ruta /Suprafata creată de Next.js (Pages Router): redirecționează
-// spre spațiul de lucru unic.
-
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { nextEvent, sampleIndex, segAt } from '@/lib/logic/derive';
 import { countdownText } from '@/lib/logic/explain';
@@ -258,16 +254,5 @@ function StudySurface({ ws, initialText, onPresented }: { ws: WS } & SurfacePres
 
       </aside>
     </div>
-  );
-}
-
-export default function SuprafataRoute() {
-  useEffect(() => {
-    window.location.replace('/?p=suprafata');
-  }, []);
-  return (
-    <p style={{ padding: 24, fontFamily: 'system-ui', color: '#f3f6fa', background: '#0b1220', minHeight: '100vh', margin: 0 }}>
-      Se deschide perspectiva „Suprafață”… <Link href="/?p=suprafata" style={{ color: '#79bfff' }}>Continuă</Link>
-    </p>
   );
 }
