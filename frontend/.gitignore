@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# date de lucru pentru generarea terenului (tools/terrain)
+/tools/terrain/work/
+/tools/terrain/raw/
+/tools/terrain/.venv-terrain/
+/tools/terrain/node_modules/
