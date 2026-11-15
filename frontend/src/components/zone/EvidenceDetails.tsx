@@ -158,6 +158,15 @@ function MethodsBody({ bundle, origin, reason, warnings, sides }: { bundle: Bund
           ))}
         </ul>
 
+        <h3>Evidence used for this comparison</h3>
+        <ul>
+          <li><b>Coordinates:</b> LROC&apos;s Apollo module coordinate document identifies the study points.</li>
+          <li><b>Map context:</b> NASA Moon Trek and LROC QuickMap support the geographic and surface interpretation.</li>
+          <li><b>Geometry:</b> NASA/JPL Horizons provides the Sun and Earth ephemerides declared by the loaded data layer.</li>
+          <li><b>Terrain:</b> the selected Apollo 15 or Apollo 17 LROC model supplies the local terrain reference used to derive the horizon profile.</li>
+          <li><b>Mission context:</b> the Canadian Space Agency reference informs the educational framing, not the computed visibility result.</li>
+        </ul>
+
         <h3>What this tool does not claim</h3>
         <ul>
           <li>A visible Sun does not guarantee electrical power or thermal safety.</li>
