@@ -24,17 +24,21 @@ The proxy's trusted IP is `192.168.111.140`, not the app host's
 
 ### Backend API
 
-The backend listens on port `8000`. From the repository root, install its
+The Python backend serves the generated scientific bundle to the frontend
+through a same-origin Next.js API route. From the repository root, install its
 requirements into the backend virtual environment and start the API:
 
 ```sh
-python3 -m venv backend/.venv
+python -m venv backend/.venv
 backend/.venv/bin/python -m pip install -r backend/requirements.txt
 backend/.venv/bin/python -m backend.run
 ```
 
-The health endpoint is `http://192.168.111.89:8000/health`. To launch with
-Uvicorn directly instead, use the same forwarded-header trust restriction:
+The health endpoint is `http://192.168.111.89:8000/health`; readiness and bundle
+endpoints are documented in `backend/README.md`. The frontend proxies bundle
+requests to `http://127.0.0.1:8000` by default. Set
+`SINAVIGATOR_BACKEND_URL` in the frontend server environment if the backend is
+at another address. To launch with Uvicorn directly, use the same forwarded-header trust restriction:
 
 ```sh
 backend/.venv/bin/python -m uvicorn backend.run:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips 192.168.111.140
@@ -42,5 +46,6 @@ backend/.venv/bin/python -m uvicorn backend.run:app --host 0.0.0.0 --port 8000 -
 
 Uvicorn only trusts forwarded headers from NPM at `192.168.111.140`; this
 setting does not replace firewall rules. Restrict access to port `8000` to
-trusted LAN services that need the API. NPM should use the frontend upstream
-above; the frontend does not currently call the backend API.
+the app host and trusted LAN services that need the API. NPM should continue
+using the frontend upstream above; Next.js proxies the bundle request to the
+local backend.

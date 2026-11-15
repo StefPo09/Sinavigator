@@ -1,12 +1,9 @@
 import uvicorn
-from fastapi import FastAPI
 
-app = FastAPI(title="Sinavigator API")
-
-
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+if __package__:
+    from .app.main import app
+else:
+    from app.main import app
 
 
 if __name__ == "__main__":

@@ -11,6 +11,11 @@ npm run dev
 Open [http://localhost:3002](http://localhost:3002). For production, run
 `npm run build` followed by `npm run start`.
 
+The workspace gets the generated data bundle through `/api/bundle`, which
+proxies to the Python backend at `http://127.0.0.1:8000`. Start the backend
+alongside Next.js for API-backed data; the frontend retains a static bundle
+fallback for deployments that have not enabled the API yet.
+
 ## Source structure
 
 - `src/app/` contains the Next.js route entry points, root layout, metadata,

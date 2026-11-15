@@ -6,22 +6,31 @@ export type LoadResult =
   | { status: 'loaded'; bundle: Bundle; warnings: string[]; origin: 'file' | 'fixture'; reason?: string }
   | { status: 'invalid'; errors: string[]; warnings: string[] };
 
-export const BUNDLE_PATH = '/data/bundle.json';
+export const BUNDLE_PATH = '/api/bundle';
+const STATIC_BUNDLE_PATH = '/data/bundle.json';
 
 /**
- * Loads public/data/bundle.json (written by the Python generator).
- * - missing file → labeled synthetic fixture
- * - present but unreadable or inconsistent → visible error, never a silent fallback
+ * Loads the bundle through the Python API, then tries the generated static bundle
+ * to preserve existing deployments that have not started the backend yet.
+ * A present but malformed bundle is always reported rather than silently replaced.
  */
 export async function loadBundle(): Promise<LoadResult> {
-  let res: Response;
-  try {
-    res = await fetch(BUNDLE_PATH, { cache: 'no-store' });
-  } catch {
-    return fixture('Fișierul de date nu a putut fi citit (offline sau deschis de pe disc).');
+  let reason = 'Backendul nu a putut fi contactat.';
+  let res: Response | null = null;
+  for (const path of [BUNDLE_PATH, STATIC_BUNDLE_PATH]) {
+    try {
+      const candidate = await fetch(path, { cache: 'no-store' });
+      if (candidate.ok && (candidate.headers.get('content-type') ?? '').includes('json')) {
+        res = candidate;
+        break;
+      }
+      reason = `Fișierul de date nu este disponibil la ${path}.`;
+    } catch (error) {
+      reason = error instanceof Error ? error.message : 'Eroare necunoscută la citirea datelor.';
+    }
   }
-  // dev servers answer unknown paths with index.html, so a non-JSON reply also means "missing"
-  if (!res.ok || !(res.headers.get('content-type') ?? '').includes('json')) return fixture('Nu există fișier de date calculate (public/data/bundle.json).');
+
+  if (!res) return fixture(`${reason} Nu există un bundle static utilizabil.`);
   let raw: unknown;
   try {
     raw = await res.json();
