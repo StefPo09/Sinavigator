@@ -122,6 +122,12 @@ export function SiteInspector({ ws }: { ws: WS }) {
   const hist = new Date(l.landingUtc);
   const terrain = ws.bundle.layers?.terrain;
   const profile = ws.profileOf(l.id);
+  const terrainUrl =
+    l.id === 'apollo17'
+      ? 'https://data.lroc.im-ldi.com/lroc/view_rdr/NAC_DTM_APOLLO17'
+      : l.id === 'apollo15'
+        ? 'https://data.lroc.im-ldi.com/lroc/view_rdr_product/NAC_DTM_APOLLO15'
+        : null;
   return (
     <>
       <div className="insp-section">
@@ -131,6 +137,26 @@ export function SiteInspector({ ws }: { ws: WS }) {
         <p>{l.blurb}</p>
         <p className="muted small">
           {l.mission.split(' · ').slice(0, 2).join(' · ')}: historic landing {hist.getUTCFullYear()}-{String(hist.getUTCMonth() + 1).padStart(2, '0')}-{String(hist.getUTCDate()).padStart(2, '0')}. Coordinates: {QUALITY_LABEL[l.quality]}.
+        </p>
+        <p className="muted small">
+          Map context:{' '}
+          <a href="https://trek.nasa.gov/moon/" target="_blank" rel="noopener noreferrer">
+            NASA Moon Trek
+          </a>{' '}
+          · terrain inspection:{' '}
+          <a href="https://quickmap.lroc.asu.edu/" target="_blank" rel="noopener noreferrer">
+            LROC QuickMap
+          </a>
+          {terrainUrl && (
+            <>
+              {' '}
+              · local model:{' '}
+              <a href={terrainUrl} target="_blank" rel="noopener noreferrer">
+                LROC terrain
+              </a>
+            </>
+          )}
+          <span className="sr-only"> (opens external resources in a new tab)</span>
         </p>
       </div>
 

@@ -8,6 +8,16 @@ import { RANKING_RULE, type AltOption } from './recommend.ts';
 /** Kept in sync with the in-app disclosure (EvidenceDetails.AI_DISCLOSURE). */
 const AI_DISCLOSURE = 'AI tools used in development: DeepSeek V4.1 Flash (1017), and Claude (Anthropic, through Claude Code) for parts of the interface code; all generated code was reviewed and tested by the team. In-app explanations are template sentences filled with computed values; no language model runs in the app.';
 
+const RESOURCE_SOURCES = [
+  { name: 'LROC QuickMap', url: 'https://quickmap.lroc.asu.edu/', role: 'Map context and terrain/image-product inspection.' },
+  { name: 'NASA Moon Trek', url: 'https://trek.nasa.gov/moon/', role: 'Lunar map and surface-layer context.' },
+  { name: 'Canadian Space Agency — Moon exploration', url: 'https://www.asc-csa.gc.ca/eng/astronomy/moon-exploration/', role: 'Educational mission-planning context.' },
+  { name: 'NASA/JPL Horizons', url: 'https://ssd.jpl.nasa.gov/horizons/', role: 'Sun and Earth ephemerides used by the computed geometry layer.' },
+  { name: 'LROC coordinates of the Apollo modules', url: 'https://lroc.im-ldi.com/data/support/downloads/2016_LROC_Coordinates_of_Human_Features.pdf', role: 'Landing-site coordinates.' },
+  { name: 'LROC Apollo 17 terrain model', url: 'https://data.lroc.im-ldi.com/lroc/view_rdr/NAC_DTM_APOLLO17', role: 'Regional Taurus–Littrow terrain reference.' },
+  { name: 'LROC Apollo 15 terrain model', url: 'https://data.lroc.im-ldi.com/lroc/view_rdr_product/NAC_DTM_APOLLO15', role: 'Regional Hadley–Apennine terrain reference.' },
+] as const;
+
 const iso = (ms: number) => new Date(Math.round(ms)).toISOString();
 
 export function buildExport(p: { bundle: Bundle; origin: 'file' | 'fixture'; source?: string; model: Model; activityMin: number; sides: Side[]; fits: Fit[]; options: AltOption[]; readyFromMs: number }) {
@@ -19,6 +29,7 @@ export function buildExport(p: { bundle: Bundle; origin: 'file' | 'fixture'; sou
     tool: 'Sinavigator',
     affiliation: 'NASA Space Apps Challenge 2026 project; not affiliated with NASA.',
     aiDisclosure: AI_DISCLOSURE,
+    resources: RESOURCE_SOURCES,
     exportedAt: new Date().toISOString(),
     label: synthetic ? 'SYNTHETIC DEMONSTRATION DATA — not SPICE or DEM results; not a mission recommendation' : 'Computed data as declared by the loaded file',
     dataStatus: {
@@ -51,6 +62,13 @@ export function buildExport(p: { bundle: Bundle; origin: 'file' | 'fixture'; sou
       startUtc: s.sc.startUtc,
       analyzedPeriod: { startUtc: s.sc.startUtc, endUtc: iso(s.t0 + s.an.totalMin * 60_000), stepMin: s.sc.stepMin },
       terrainProfile: p.model === 'terrain' ? (s.profile ?? null) : 'not used (idealized horizon)',
+      evidence: {
+        coordinates: 'LROC coordinates of the Apollo modules',
+        mapContext: ['NASA Moon Trek', 'LROC QuickMap'],
+        ephemeris: 'NASA/JPL Horizons',
+        terrain: s.site.id === 'apollo17' ? 'LROC Apollo 17 terrain model' : s.site.id === 'apollo15' ? 'LROC Apollo 15 terrain model' : null,
+        missionContext: 'Canadian Space Agency — Moon exploration',
+      },
       verdict: fits[i].kind,
       firstQualifyingWindow: seg(s, fits[i].first),
       spareMinutes: fits[i].first ? +fits[i].spareMin.toFixed(2) : null,
