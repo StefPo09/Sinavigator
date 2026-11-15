@@ -131,6 +131,17 @@ export function SiteInspector({ ws }: { ws: WS }) {
         <p className="muted small">
           {l.mission.split(' · ').slice(0, 2).join(' · ')}: historic landing {hist.getUTCFullYear()}-{String(hist.getUTCMonth() + 1).padStart(2, '0')}-{String(hist.getUTCDate()).padStart(2, '0')}. Coordinates: {QUALITY_LABEL[l.quality]}.
         </p>
+        <p className="muted small">
+          Map context:{' '}
+          <a href="https://trek.nasa.gov/moon/" target="_blank" rel="noopener noreferrer">
+            NASA Moon Trek
+          </a>{' '}
+          · terrain inspection:{' '}
+          <a href="https://quickmap.lroc.asu.edu/" target="_blank" rel="noopener noreferrer">
+            LROC QuickMap
+          </a>
+          <span className="sr-only"> (opens external resources in a new tab)</span>
+        </p>
       </div>
 
       <div className="insp-section">
