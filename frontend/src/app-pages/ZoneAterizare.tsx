@@ -2,13 +2,10 @@
 
 // Perspectiva 2 — Luna: clic pe un punct de pe glob → camera zboară spre el → „Suprafață”.
 // Comparația Plan A / Alternativa B se deschide într-un panou glisant („Analiză”).
-// Exportul implicit este ruta /ZoneAterizare creată de Next.js (Pages Router): redirecționează
-// spre spațiul de lucru unic, ca starea să rămână comună.
-
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { LANDING_SITES } from '@/lib/data/landingSites';
+import { localSkyDirection, siteSkyAt } from '@/lib/logic/bundleEphemeris';
 import { TimeBar } from '../components/shared/TimeBar';
 import { webglAvailable } from '../components/shared/three-utils';
 import type { WS } from '../components/shared/types';
@@ -39,6 +36,8 @@ export function ZoneAterizareView({ ws }: { ws: WS }) {
   }, [analysis]);
 
   const focus = ws.landing;
+  const sky = focus ? siteSkyAt(ws.bundle, focus.id, ws.timeMs) : null;
+  const sunDirection = focus && sky ? localSkyDirection(focus.latDeg, focus.lonDeg, sky.sun) : null;
   const flyLanding = (id: string) => {
     ws.selectLanding(id);
     ws.go('suprafata');
@@ -73,6 +72,7 @@ export function ZoneAterizareView({ ws }: { ws: WS }) {
               onModel={setMoonModel}
               landing={LANDING_SITES}
               landingId={ws.landing?.id ?? null}
+              sunDirection={sunDirection}
               onLanding={flyLanding}
               quality={ws.quality}
               intro={ws.prevStage === 'sistem' ? 'far' : ws.prevStage === 'suprafata' ? 'site' : 'none'}
@@ -134,16 +134,5 @@ export function ZoneAterizareView({ ws }: { ws: WS }) {
         </div>
       </section>
     </div>
-  );
-}
-
-export default function ZoneAterizareRoute() {
-  useEffect(() => {
-    window.location.replace('/?p=zone');
-  }, []);
-  return (
-    <p style={{ padding: 24, fontFamily: 'system-ui', color: '#f3f6fa', background: '#0b1220', minHeight: '100vh', margin: 0 }}>
-      Se deschide perspectiva „Lună”… <Link href="/?p=zone" style={{ color: '#79bfff' }}>Continuă</Link>
-    </p>
   );
 }

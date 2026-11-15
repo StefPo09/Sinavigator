@@ -1,9 +1,10 @@
 'use client';
 
-// Suprafața unui loc REAL de aterizare: model 3D de teren (LROC NAC DTM + ortofoto NAC), cer aproximativ.
+// Suprafața unui loc real de aterizare, lit from the fetched site-specific Horizons samples.
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { approxLocalSky, LOCAL_SKY_LABEL } from '@/lib/logic/ephemeris';
+import { horizonAt } from '@/lib/logic/derive';
+import { siteSkyAt } from '@/lib/logic/bundleEphemeris';
 import { fmtUtcMs } from '@/lib/logic/format';
 import { StatePill } from '../shared/common';
 import { TimeBar } from '../shared/TimeBar';
@@ -21,7 +22,6 @@ const SurfaceScene = dynamic(() => import('./SurfaceScene'), {
 const CARD = ['N', 'NE', 'E', 'SE', 'S', 'SV', 'V', 'NV'];
 const cardinal = (az: number) => CARD[Math.round(az / 45) % 8];
 const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
-const H = 3_600_000;
 
 type Load = { s: 'loading' } | { s: 'ready'; t: SiteTerrain } | { s: 'none' } | { s: 'error' };
 
@@ -32,14 +32,6 @@ export function LandingSurface({ ws, initialText, onPresented }: { ws: WS } & Su
   useTextPresentation(mode === '2d' || gl === false, onPresented);
   const [heading, setHeading] = useState({ az: 0, pitch: 8 });
   const [load, setLoad] = useState<Load>({ s: 'loading' });
-  // momentul: ora reală a aterizării (+ ore) sau data analizată din bara temporală globală
-  const [clock, setClock] = useState<'landing' | 'global'>('landing');
-  // implicit: prima oră după aterizare cu Soarele la ~25° (umbre lizibile, ca în fotografiile din misiune)
-  const [afterH, setAfterH] = useState(() => {
-    const t0 = Date.parse(l.landingUtc);
-    for (let h = 0; h <= 240; h++) if (approxLocalSky(t0 + h * 3_600_000, l.latDeg, l.lonDeg).sun.elDeg >= 25) return h;
-    return 0;
-  });
   const handle = useRef<SurfaceHandle | null>(null);
   const onReady = useCallback((h: SurfaceHandle | null) => {
     handle.current = h;
@@ -55,37 +47,47 @@ export function LandingSurface({ ws, initialText, onPresented }: { ws: WS } & Su
     };
   }, [l, ws.quality]);
 
-  const landingMs = Date.parse(l.landingUtc);
-  const timeMs = clock === 'landing' ? landingMs + afterH * H : ws.timeMs;
-  const ap = approxLocalSky(timeMs, l.latDeg, l.lonDeg);
+  const timeMs = ws.timeMs;
+  const sample = siteSkyAt(ws.bundle, l.id, timeMs);
+  const profile = ws.profileOf(l.id);
+  const visible = (azDeg: number | undefined, elDeg: number | null, threshold: number, strict: boolean): 'vis' | 'hid' | 'unk' => {
+    if (azDeg == null || elDeg == null) return 'unk';
+    const horizon = horizonAt(profile, azDeg, 'terrain');
+    if (horizon == null) return 'unk';
+    const margin = elDeg - horizon;
+    return (strict ? margin > threshold : margin >= threshold) ? 'vis' : 'hid';
+  };
   const sky: SkyState = {
-    sunAz: ap.sun.azDeg,
-    sunEl: ap.sun.elDeg,
-    earthAz: ap.earth.azDeg,
-    earthEl: ap.earth.elDeg,
-    sunState: ap.sun.elDeg > 0 ? 'vis' : 'hid',
-    earthState: ap.earth.elDeg > 0 ? 'vis' : 'hid',
+    sunAz: sample?.sun.azDeg ?? 0,
+    sunEl: sample?.sun.elDeg ?? null,
+    earthAz: sample?.earth?.azDeg ?? 0,
+    earthEl: sample?.earth?.elDeg ?? null,
+    sunState: visible(sample?.sun.azDeg, sample?.sun.elDeg ?? null, ws.bundle.rules.sunMarginDeg, true),
+    earthState: visible(sample?.earth?.azDeg, sample?.earth?.elDeg ?? null, ws.bundle.rules.earthMarginDeg, false),
   };
   const real = load.s === 'ready' ? load.t : null;
-  const night = ap.sun.elDeg <= 0;
-  /** următorul moment (după `from`) cu Soarele la cel puțin 10° deasupra orizontului */
-  const nextDay = (from: number) => {
-    for (let h = 1; h <= 24 * 30; h++) if (approxLocalSky(from + h * H, l.latDeg, l.lonDeg).sun.elDeg >= 10) return from + h * H;
-    return null;
-  };
-  const goSunrise = () => {
-    const t = nextDay(timeMs);
-    if (t == null) return;
-    if (clock === 'landing' && t - landingMs <= 240 * H) setAfterH(Math.round((t - landingMs) / H));
-    else if (clock === 'global' && t <= ws.cov.endMs) ws.seekUtc(t);
-    else {
-      // în afara intervalului: revino la momentul aterizării, cu Soarele sus
-      setClock('landing');
-      const t2 = nextDay(landingMs);
-      setAfterH(t2 != null ? Math.min(240, Math.round((t2 - landingMs) / H)) : 0);
-    }
-  };
+  const night = sample != null && sky.sunState === 'hid';
   const b = real?.build;
+  const goSunrise = () => {
+    const scenarios = ws.bundle.scenarios
+      .filter((scenario) => scenario.siteId === l.id && Date.parse(scenario.startUtc) + scenario.durationH * 3_600_000 > timeMs)
+      .sort((a, b) => Date.parse(a.startUtc) - Date.parse(b.startUtc));
+    for (const scenario of scenarios) {
+      const start = Date.parse(scenario.startUtc);
+      const stepMs = scenario.stepMin * 60_000;
+      const first = Math.max(0, Math.floor((timeMs - start) / stepMs) + 1);
+      for (let i = first; i < scenario.sun.elDeg.length; i++) {
+        const candidate = start + i * stepMs;
+        const candidateSample = siteSkyAt(ws.bundle, l.id, candidate);
+        const horizon = candidateSample && horizonAt(profile, candidateSample.sun.azDeg, 'terrain');
+        if (candidateSample && horizon != null && candidateSample.sun.elDeg - horizon > ws.bundle.rules.sunMarginDeg) {
+          ws.seekUtc(candidate);
+          return;
+        }
+      }
+    }
+    ws.setNote('Nu există un eșantion viitor cu Soarele vizibil în intervalul acoperit de datele NASA/JPL Horizons.');
+  };
 
   const back = (
     <button type="button" className="btn hud-btn" onClick={() => ws.go('zone')}>
@@ -101,7 +103,7 @@ export function LandingSurface({ ws, initialText, onPresented }: { ws: WS } & Su
         ? 'Modelul 3D al terenului nu a putut fi încărcat; se afișează teren procedural ilustrativ.'
         : 'Modelul 3D al terenului lipsește din public/3d-models/terrain; se afișează teren procedural ilustrativ.';
 
-  const hasScene = mode === '3d' && gl && load.s !== 'loading';
+  const hasScene = mode === '3d' && gl && load.s !== 'loading' && sample != null;
 
   return (
     <div className="workspace-grid">
@@ -133,17 +135,21 @@ export function LandingSurface({ ws, initialText, onPresented }: { ws: WS } & Su
               {night && (
                 <div className="night-note glass" role="status">
                   <p>
-                    <b>Noapte lunară</b> la acest moment: Soarele e sub orizont (≈ {ap.sun.elDeg.toFixed(0)}°). Terenul e luminat doar de lumina Pământului
-                    {ap.earth.elDeg > 0 ? ', aflat sus pe cer' : ' — iar Pământul e și el sub orizont'}.
+                    <b>Noapte lunară</b> la acest moment: Soarele este ascuns de orizontul local al terenului (elevație {sample.sun.elDeg.toFixed(1)}°). Pământul
+                    {sky.earthState === 'vis' ? ' este deasupra orizontului local.' : ' nu este vizibil deasupra orizontului local.'}
                   </p>
                   <button type="button" className="btn sm primary" onClick={goSunrise}>
-                    Mergi la răsărit
+                    Mergi la următoarea lumină solară
                   </button>
                 </div>
               )}
             </>
           ) : load.s === 'loading' && mode === '3d' && gl ? (
             <div className="s3-loading">Se încarcă modelul 3D al terenului (LROC NAC DTM)…</div>
+          ) : !sample ? (
+            <div className="fallback">
+              <p><b>Datele NASA/JPL Horizons nu acoperă acest moment.</b> Alege un timp din intervalul afișat în bara temporală pentru a vizualiza iluminarea calculată.</p>
+            </div>
           ) : (
             <div className="surface-2d">
               {gl === false && <p className="muted small">WebGL nu este disponibil; se afișează alternativa text.</p>}
@@ -153,24 +159,7 @@ export function LandingSurface({ ws, initialText, onPresented }: { ws: WS } & Su
         </div>
 
         <div className="scene-footer landing-clock">
-          <div className="seg" role="group" aria-label="Momentul afișat">
-            <button type="button" className={`chip${clock === 'landing' ? ' on' : ''}`} aria-pressed={clock === 'landing'} onClick={() => setClock('landing')}>
-              Momentul aterizării
-            </button>
-            <button type="button" className={`chip${clock === 'global' ? ' on' : ''}`} aria-pressed={clock === 'global'} onClick={() => setClock('global')}>
-              Data analizată
-            </button>
-          </div>
-          {clock === 'landing' ? (
-            <label className="after-h">
-              <span className="small">
-                Aterizare: <b className="mono">{fmtUtcMs(landingMs)}</b> · +{afterH} h
-              </span>
-              <input type="range" min={0} max={240} step={1} value={afterH} onChange={(e) => setAfterH(Number(e.target.value))} aria-label="Ore după aterizare" aria-valuetext={`${afterH} ore după aterizare, ${fmtUtcMs(timeMs)}`} />
-            </label>
-          ) : (
-            <TimeBar cov={ws.cov} timeMs={ws.timeMs} playing={ws.playing} speed={ws.speed} onSeek={ws.seekUtc} onPlay={ws.togglePlay} onSpeed={ws.setSpeed} onNow={ws.goNow} compact />
-          )}
+          <TimeBar cov={ws.cov} timeMs={ws.timeMs} playing={ws.playing} speed={ws.speed} onSeek={ws.seekUtc} onPlay={ws.togglePlay} onSpeed={ws.setSpeed} onNow={ws.goNow} compact />
         </div>
       </section>
       <aside className="workspace-inspector" aria-labelledby="surf-h">
@@ -198,37 +187,45 @@ export function LandingSurface({ ws, initialText, onPresented }: { ws: WS } & Su
           </p>
         )}
         <h3 className="inspector-section-title">Soare și Pământ</h3>
-        <div className="sky-readout">
-          <div className="hud-body">
-            <StatePill state={sky.sunState} label="Soarele ≈" />
-            <span className="mono small">
-              el {ap.sun.elDeg.toFixed(0)}° · az {ap.sun.azDeg.toFixed(0)}°
-            </span>
-          </div>
-          <div className="hud-body">
-            <StatePill state={sky.earthState} label="Pământul ≈" />
-            <span className="mono small">
-              el {ap.earth.elDeg.toFixed(0)}° · az {ap.earth.azDeg.toFixed(0)}°
-            </span>
-          </div>
-          <p className="small">Poziții aproximative pentru explorare</p>
-          </div>
-        {hasScene && (
-          <div className="row">
-            <button type="button" className="btn sm primary" onClick={() => handle.current?.lookAt(ap.sun.azDeg, ap.sun.elDeg)}>
-              Privește Soarele
-            </button>
-            <button type="button" className="btn sm hud-btn" onClick={() => handle.current?.lookAt(ap.earth.azDeg, ap.earth.elDeg)}>
-              Privește Pământul
-            </button>
-            <button type="button" className="btn sm hud-btn" onClick={() => handle.current?.reset()}>
-              Resetează privirea
-            </button>
-          </div>
+        {sample ? (
+          <>
+            <div className="sky-readout">
+              <div className="hud-body">
+                <StatePill state={sky.sunState} label="Soarele" />
+                <span className="mono small">el {sample.sun.elDeg.toFixed(1)}° · az {sample.sun.azDeg.toFixed(1)}°</span>
+              </div>
+              {sample.earth && (
+                <div className="hud-body">
+                  <StatePill state={sky.earthState} label="Pământul" />
+                  <span className="mono small">el {sample.earth.elDeg.toFixed(1)}° · az {sample.earth.azDeg.toFixed(1)}°</span>
+                </div>
+              )}
+              <p className="small">
+                Poziții interpolate din <a href={ws.bundle.layers?.geometry?.url ?? 'https://ssd.jpl.nasa.gov/horizons/'} target="_blank" rel="noreferrer">NASA/JPL Horizons (DE441)</a>; vizibilitatea folosește profilul de teren <a href={ws.bundle.layers?.terrain?.url ?? 'https://trek.nasa.gov/moon/'} target="_blank" rel="noreferrer">LROC NAC DTM</a>.
+              </p>
+            </div>
+            {hasScene && (
+              <div className="row">
+                <button type="button" className="btn sm primary" onClick={() => handle.current?.lookAt(sample.sun.azDeg, sample.sun.elDeg)}>
+                  Privește Soarele
+                </button>
+                {sample.earth && (
+                  <button type="button" className="btn sm hud-btn" onClick={() => handle.current?.lookAt(sample.earth!.azDeg, sample.earth!.elDeg!)}>
+                    Privește Pământul
+                  </button>
+                )}
+                <button type="button" className="btn sm hud-btn" onClick={() => handle.current?.reset()}>
+                  Resetează privirea
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="small muted">Nu sunt poziții NASA/JPL Horizons pentru acest moment.</p>
         )}
 
         <p className="surface-note small" tabIndex={0}>
-          <b>{terrainNote}</b> {LOCAL_SKY_LABEL} Controale: trage pentru a roti privirea, rotița pentru zoom; din tastatură: clic pe scenă, apoi săgețile și + / −.
+          <b>{terrainNote}</b> Datele astronomice sunt limitate la acoperirea temporală a bundle-ului. Controale: trage pentru a roti privirea, rotița pentru zoom; din tastatură: clic pe scenă, apoi săgețile și + / −.
         </p>
       </aside>
     </div>

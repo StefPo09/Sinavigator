@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sinavigator frontend
 
-## Getting Started
-
-First, run the development server:
+The frontend uses Next.js App Router. From this directory, install dependencies
+and start the development server:
 
 ```bash
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3002](http://localhost:3002) with your browser to see the result.
+Open [http://localhost:3002](http://localhost:3002). For production, run
+`npm run build` followed by `npm run start`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The workspace gets the generated data bundle through `/api/bundle`, which
+proxies to the Python backend at `http://127.0.0.1:8000`. Start the backend
+alongside Next.js for API-backed data; the frontend retains a static bundle
+fallback for deployments that have not enabled the API yet.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The lunar globe and Apollo landing-surface lighting, along with selected-site
+sky readings, follow the bundle's 10-minute Sun/Earth azimuth and elevation
+samples from NASA/JPL Horizons DE441. The selected UTC time is interpolated
+between samples; no positions are extrapolated beyond the bundle's coverage
+(currently Nov 27–Dec 3, 2026). Surface visibility uses the LROC NAC DTM
+horizon profile. Terrain provenance and source links are included in the bundle.
 
-## Learn More
+## Source structure
 
-To learn more about Next.js, take a look at the following resources:
+- `src/app/` contains the Next.js route entry points, root layout, metadata,
+  global styles, and route redirects. The main workspace uses `?p=sistem`,
+  `?p=zone`, and `?p=suprafata` to select its three in-page perspectives.
+- `src/app-pages/` contains the composed perspective screens.
+- `src/components/` contains reusable UI grouped by feature; `shared/` holds
+  cross-feature workspace elements and shared state types.
+- `src/lib/` contains data loading, shared types, and reusable domain logic.
+- `public/` is at the frontend root, as expected by Next.js, and stores the
+  static data, textures, and 3D models.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Routing uses the existing Next.js App Router and shared workspace state; no
+additional client router is needed. The Python backend is a separate service,
+so no duplicate Next.js API handlers are added.

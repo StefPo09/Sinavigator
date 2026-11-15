@@ -2,11 +2,7 @@
 
 // Perspectiva 1 — Sistemul Soare–Pământ–Lună.
 // Clic pe Lună → camera zboară până la Lună → perspectiva „Lună”.
-// Exportul implicit este ruta /Sistem creată de Next.js (Pages Router): redirecționează spre
-// spațiul de lucru unic, ca data, zona și configurația să rămână comune între perspective.
-
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { EPHEMERIS_LABEL, moonGeocentric, moonPhase, sunGeocentric } from '@/lib/logic/ephemeris';
 import { fmtUtcMs } from '@/lib/logic/format';
@@ -129,16 +125,5 @@ export function SistemView({ ws }: { ws: WS }) {
       </aside>
 
     </div>
-  );
-}
-
-export default function SistemRoute() {
-  useEffect(() => {
-    window.location.replace('/?p=sistem');
-  }, []);
-  return (
-    <p style={{ padding: 24, fontFamily: 'system-ui', color: '#f3f6fa', background: '#0b1220', minHeight: '100vh', margin: 0 }}>
-      Se deschide perspectiva „Sistem”… <Link href="/?p=sistem" style={{ color: '#79bfff' }}>Continuă</Link>
-    </p>
   );
 }
