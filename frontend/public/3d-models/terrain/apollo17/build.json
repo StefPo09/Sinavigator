@@ -1,0 +1,72 @@
+{
+ "lat": 20.1911,
+ "lon": 30.7723,
+ "site_h_m": -2626.162907307687,
+ "curvature": true,
+ "close": {
+  "step_m": 1.0,
+  "x": [
+   -608.0,
+   607.0
+  ],
+  "z": [
+   -608.0,
+   607.0
+  ],
+  "ortho": {
+   "product": "NAC_DTM_APOLLO17_1_M134991788_60CM",
+   "url": "https://pds.lroc.im-ldi.com/data/LRO-L-LROC-5-RDR-V1.0/LROLRC_2001/EXTRAS/BROWSE/NAC_DTM/APOLLO17_1/NAC_DTM_APOLLO17_1_M134991788_60CM.PYR.TIF",
+   "resolution_m": 0.599999999999908,
+   "x0": -620.5070300039815,
+   "x1": 619.6929699958283,
+   "z0": -620.1992509553655,
+   "z1": 619.4007490444445,
+   "native_px": [
+    2067,
+    2066
+   ]
+  }
+ },
+ "near": {
+  "tif": "NAC_DTM_APOLLO17_1.TIF",
+  "dtm_res_m": 2.0000000000006,
+  "step_m": 2.0,
+  "half_m": 2400.0,
+  "x": [
+   -1862.0,
+   2368.0
+  ],
+  "z": [
+   -2370.0,
+   2368.0
+  ],
+  "ortho": {
+   "product": "NAC_DTM_APOLLO17_1_M134991788_60CM",
+   "url": "https://pds.lroc.im-ldi.com/data/LRO-L-LROC-5-RDR-V1.0/LROLRC_2001/EXTRAS/BROWSE/NAC_DTM/APOLLO17_1/NAC_DTM_APOLLO17_1_M134991788_60CM.PYR.TIF",
+   "resolution_m": 0.599999999999908,
+   "x0": -2145.707030003748,
+   "x1": 2399.8929699955556,
+   "z0": -2400.3992509550926,
+   "z1": 2399.6007490441716,
+   "native_px": [
+    7576,
+    8000
+   ]
+  }
+ },
+ "far": {
+  "tif": "NAC_DTM_APOLLO17.TIF",
+  "dtm_res_m": 4.9999999999999,
+  "step_m": 12.0,
+  "x": [
+   -16000.0,
+   15992.0
+  ],
+  "z": [
+   -16000.0,
+   15992.0
+  ],
+  "offset_m": 0.0009315219413110754,
+  "ortho": "NAC_DTM_APOLLO17_MOSAIC_5M"
+ }
+}

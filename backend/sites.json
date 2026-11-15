@@ -1,0 +1,46 @@
+{
+  "coordinate_conventions": {
+    "coordinate_frame": "Mean Earth / Polar Axis (ME), as used by the JPL Horizons lunar observer output",
+    "latitude_type": "planetocentric",
+    "longitude_direction": "east",
+    "longitude_unit": "degree",
+    "height_unit": "m",
+    "terrain_height_note": "The site elevation is read from the matching LROC terrain build manifest. The frontend generator supplies that elevation to Horizons and adds the configured observer height."
+  },
+  "sites": [
+    {
+      "id": "apollo17",
+      "name": "Apollo 17",
+      "short": "Apollo 17",
+      "mission": "Apollo 17 · Challenger · Taurus–Littrow",
+      "agency": "NASA",
+      "latitude_deg": 20.1911,
+      "longitude_deg": 30.7723,
+      "landing_utc": "1972-12-11T19:54:57Z",
+      "coordinate_quality": "LROC image measurement",
+      "coordinate_source": "Wagner et al. (2016), Coordinates of anthropogenic features on the Moon, Icarus 279.",
+      "source_url": "https://lroc.im-ldi.com/data/support/downloads/2016_LROC_Coordinates_of_Human_Features.pdf",
+      "terrain_directory": "frontend/public/3d-models/terrain/apollo17",
+      "terrain_manifest": "build.json",
+      "site_elevation_m": -2626.162907307687,
+      "description": "Apollo 17 landing site in the Taurus–Littrow valley, between the North and South Massifs."
+    },
+    {
+      "id": "apollo15",
+      "name": "Apollo 15",
+      "short": "Apollo 15",
+      "mission": "Apollo 15 · Falcon · Hadley–Apennine",
+      "agency": "NASA",
+      "latitude_deg": 26.13239,
+      "longitude_deg": 3.6333,
+      "landing_utc": "1971-07-30T22:16:29Z",
+      "coordinate_quality": "LROC image measurement",
+      "coordinate_source": "Wagner et al. (2016), Coordinates of anthropogenic features on the Moon, Icarus 279.",
+      "source_url": "https://lroc.im-ldi.com/data/support/downloads/2016_LROC_Coordinates_of_Human_Features.pdf",
+      "terrain_directory": "frontend/public/3d-models/terrain/apollo15",
+      "terrain_manifest": "build.json",
+      "site_elevation_m": -1923.2968401304097,
+      "description": "Apollo 15 landing site near Hadley Rille in the Hadley–Apennine region."
+    }
+  ]
+}
