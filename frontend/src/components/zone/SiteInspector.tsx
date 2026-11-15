@@ -121,6 +121,12 @@ export function SiteInspector({ ws }: { ws: WS }) {
   const hist = new Date(l.landingUtc);
   const terrain = ws.bundle.layers?.terrain;
   const profile = ws.profileOf(l.id);
+  const terrainUrl =
+    l.id === 'apollo17'
+      ? 'https://data.lroc.im-ldi.com/lroc/view_rdr/NAC_DTM_APOLLO17'
+      : l.id === 'apollo15'
+        ? 'https://data.lroc.im-ldi.com/lroc/view_rdr_product/NAC_DTM_APOLLO15'
+        : null;
   return (
     <>
       <div className="insp-section">
@@ -140,6 +146,15 @@ export function SiteInspector({ ws }: { ws: WS }) {
           <a href="https://quickmap.lroc.asu.edu/" target="_blank" rel="noopener noreferrer">
             LROC QuickMap
           </a>
+          {terrainUrl && (
+            <>
+              {' '}
+              · local model:{' '}
+              <a href={terrainUrl} target="_blank" rel="noopener noreferrer">
+                LROC terrain
+              </a>
+            </>
+          )}
           <span className="sr-only"> (opens external resources in a new tab)</span>
         </p>
       </div>
