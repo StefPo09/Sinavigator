@@ -24,13 +24,13 @@ const STEPS: Step[] = [
   {
     stage: 'sistem',
     goLabel: 'Go to the System view',
-    target: '.workspace-scene',
+    target: '.system-tableau',
     title: 'Sun, Earth and Moon',
     body: 'A schematic picture (not to scale). The Moon sits at its real position for the chosen moment. Hover the Moon to highlight it and click it to fly there.',
   },
   {
     stage: 'sistem',
-    target: '.timebar',
+    target: '.timeline',
     title: 'The timeline',
     body: 'This sets the analysed moment (UTC). The data covers 27 Nov – 3 Dec 2026. Drag, step, or press play to watch time move.',
   },
@@ -48,13 +48,13 @@ const STEPS: Step[] = [
   },
   {
     stage: 'zone',
-    target: '.workspace-inspector',
+    target: '.conclusion',
     title: 'The answer, computed',
     body: 'Does the 2-hour activity fit at this site in the period that contains the analysed moment? “Why?” names the body and direction that limit it, with real angles.',
   },
   {
     stage: 'zone',
-    target: '.workspace-scene',
+    target: '.tl-track',
     title: 'Read the bands',
     body: 'Green = Sun and Earth both visible. Yellow = only the Sun, blue = only the Earth. ▲▼ mark computed rise and set events — click one to jump there.',
   },
@@ -66,7 +66,7 @@ const STEPS: Step[] = [
   },
   {
     stage: 'zone',
-    target: '.workspace-inspector',
+    target: '.insp-enter',
     title: 'Stand on the surface',
     body: 'See the real Apollo terrain at the analysed moment, with the Sun and Earth where the data puts them. After the tour, a short quiz checks what you learned.',
   },

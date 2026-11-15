@@ -5,20 +5,25 @@ import type { Side } from '../../components/zone/ScenarioCards.tsx';
 import type { Fit, Model, Segment } from './derive.ts';
 import { RANKING_RULE, type AltOption } from './recommend.ts';
 
+/** Kept in sync with the in-app disclosure (EvidenceDetails.AI_DISCLOSURE). */
+const AI_DISCLOSURE = 'Interface code written with AI assistance (Claude, Anthropic) and reviewed by the team. In-app explanations are template sentences filled with computed values; no language model runs in the app.';
+
 const iso = (ms: number) => new Date(Math.round(ms)).toISOString();
 
-export function buildExport(p: { bundle: Bundle; origin: 'file' | 'fixture'; model: Model; activityMin: number; sides: Side[]; fits: Fit[]; options: AltOption[]; readyFromMs: number }) {
+export function buildExport(p: { bundle: Bundle; origin: 'file' | 'fixture'; source?: string; model: Model; activityMin: number; sides: Side[]; fits: Fit[]; options: AltOption[]; readyFromMs: number }) {
   const { bundle, sides, fits } = p;
   const synthetic = bundle.provenance === 'fixture';
   const seg = (s: Side, g: Segment | null) =>
     g && { startUtc: iso(s.t0 + g.start * 60_000), endUtc: iso(s.t0 + g.end * 60_000), minutes: +(g.end - g.start).toFixed(2), truncatedStart: g.truncStart, truncatedEnd: g.truncEnd };
   return {
-    tool: 'Lunar Horizon Compare',
+    tool: 'Sinavigator',
+    affiliation: 'NASA Space Apps Challenge 2026 project; not affiliated with NASA.',
+    aiDisclosure: AI_DISCLOSURE,
     exportedAt: new Date().toISOString(),
     label: synthetic ? 'SYNTHETIC DEMONSTRATION DATA — not SPICE or DEM results; not a mission recommendation' : 'Computed data as declared by the loaded file',
     dataStatus: {
       provenance: bundle.provenance,
-      origin: p.origin === 'fixture' ? 'built-in synthetic fixture' : 'public/data/bundle.json',
+      origin: p.origin === 'fixture' ? 'built-in synthetic fixture' : (p.source ?? 'unknown source'),
       note: bundle.note,
       generatedAt: bundle.generatedAt,
       layers: bundle.layers ?? 'not declared',
@@ -68,6 +73,7 @@ export function buildExport(p: { bundle: Bundle; origin: 'file' | 'fixture'; mod
         minutes: +o.lengthMin.toFixed(2),
         spareMinutes: +o.spareMin.toFixed(2),
         truncatedEnd: o.truncatedEnd,
+        clippedToRequestedStart: o.clippedStart,
       })),
     },
   };

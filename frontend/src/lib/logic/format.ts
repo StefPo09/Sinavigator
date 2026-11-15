@@ -1,7 +1,7 @@
 // Display formatting only. Values stay numeric (minutes, degrees, epoch ms) in the data model
 // and are formatted at the display boundary.
 
-const MONTHS = ['ian', 'feb', 'mar', 'apr', 'mai', 'iun', 'iul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const p2 = (n: number) => String(n).padStart(2, '0');
 
 export function fmtDur(min: number): string {
@@ -39,7 +39,7 @@ export function fmtDeg(v: number | null | undefined, digits = 1, signed = false)
 export const fmtElapsed = (min: number) => `T+${p2(Math.floor(min / 60))}:${p2(Math.round(min % 60))}`;
 
 export function fmtDeltaH(h: number): string {
-  if (Math.round(h * 60) === 0) return 'același start';
+  if (Math.round(h * 60) === 0) return 'same start';
   const s = Math.abs(h);
   return `${h > 0 ? '+' : '−'}${Number.isInteger(s) ? s : s.toFixed(1)} h`;
 }

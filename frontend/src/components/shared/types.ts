@@ -8,11 +8,13 @@ import type { AltOption } from '@/lib/logic/recommend';
 import type { Catalog, Sel } from '@/lib/logic/scenarios';
 import type { Coverage, Speed } from '@/lib/logic/timeline';
 import type { LandingSite } from '@/lib/data/landingSites';
+import type { SiteTrack } from '@/lib/logic/lesson';
 import type { Quality } from './quality';
 import type { Trust } from '../zone/DecisionSummary';
 import type { Side } from '../zone/ScenarioCards';
 
 export type Perspective = 'sistem' | 'zone' | 'suprafata';
+export type Mode = 'elev' | 'planificator';
 
 export interface Marker {
   side: 'A' | 'B';
@@ -42,6 +44,8 @@ export interface WS {
   togglePlay: () => void;
   setSpeed: (s: Speed) => void;
   goNow: () => void;
+  /** where today falls relative to the data window ("Now" is only a real moment when inside) */
+  nowState: 'inside' | 'before' | 'after';
 
   /* configurație */
   model: Model;
@@ -69,7 +73,15 @@ export interface WS {
   useOption: (o: AltOption) => void;
   exportJson: () => void;
 
-  /* explorare: loc real de aterizare (fără analiză de vizibilitate) */
+  /** benzile de vizibilitate ale unui loc pe toată acoperirea, cu modelul de orizont activ */
+  trackOf: (siteId: string) => SiteTrack | null;
+  /** Elev = lecția ghidată; Planificator = aceleași date, cu tabele, unghiuri, praguri și export */
+  mode: Mode;
+  setMode: (m: Mode) => void;
+  /** scrolls to the mission section */
+  showMission: () => void;
+
+  /* explorare: loc real de aterizare */
   landing: LandingSite | null;
   selectLanding: (id: string | null) => void;
   quality: Quality;
@@ -77,7 +89,6 @@ export interface WS {
 
   note: string;
   setNote: (s: string) => void;
-  showMission: () => void;
   go: (p: Perspective) => void;
   /** perspectiva curentă și cea din care s-a venit (pentru animațiile de intrare) */
   stage: Perspective;

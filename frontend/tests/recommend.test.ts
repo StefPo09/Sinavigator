@@ -38,11 +38,22 @@ test('ranks qualifying windows by earliest UTC start, not by length', () => {
   assert.ok(opts[1].lengthMin > opts[0].lengthMin);
 });
 
-test('ignores scenarios that start before the requested start and windows that are too short', () => {
+test('ignores scenarios that ended before the requested start and windows that are too short', () => {
   const before = sc('A0', 'A', 0, [1, 1, 1, 1, 1, 1, 1]);
   const short = sc('A24', 'A', 24, [0, 1, 0, 0, 0, 0, 0]);
   const list = [before, short];
   assert.deepEqual(findOptions(list, setup(list), T0 + 24 * H, 90), []);
+});
+
+test('keeps the usable part of a window that is already open at the requested start', () => {
+  const open = sc('A20', 'A', 20, [1, 1, 1, 1, 1, 1, 1, 1]); // visible 20 h → 27 h
+  const opts = findOptions([open], setup([open]), T0 + 24 * H, 90);
+  assert.equal(opts.length, 1);
+  assert.equal(opts[0].startMs, T0 + 24 * H);
+  assert.equal(opts[0].lengthMin, 180);
+  assert.equal(opts[0].clippedStart, true);
+  // the remaining part is too short for a 4 h activity
+  assert.deepEqual(findOptions([open], setup([open]), T0 + 24 * H, 240), []);
 });
 
 test('unknown data never becomes a recommendation', () => {

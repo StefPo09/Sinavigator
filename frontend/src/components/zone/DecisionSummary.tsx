@@ -27,16 +27,16 @@ interface Props {
 }
 
 const ICON = { fits: '✓', insufficient: '?', none: '✕' };
-const LIMIT_NAME = { sun: 'Soarele', earth: 'Pământul', both: 'Soarele și Pământul' } as const;
+const LIMIT_NAME = { sun: 'the Sun', earth: 'the Earth', both: 'the Sun and Earth' } as const;
 
 /** Ce limitează activitatea într-un scenariu: corpul care închide fereastra relevantă. */
 function limitingText(side: Side, fit: Fit): string {
   const seg = fit.first ?? fit.longest;
-  if (!seg) return 'Nicio fereastră comună cunoscută în perioada analizată.';
+  if (!seg) return 'No known common window in the analysed period.';
   const c = closingCause(side.an, seg);
-  if (c.kind === 'period-end') return 'Fereastra durează până la capătul perioadei analizate (poate fi mai lungă).';
-  if (c.kind === 'unknown') return `Date lipsă pentru ${LIMIT_NAME[c.body]} după ${fmtUtcMs(side.t0 + c.t * 60_000, false)}.`;
-  return `Limitează: ${LIMIT_NAME[c.body]} coboară sub orizont la ${fmtUtcMs(side.t0 + c.t * 60_000)}.`;
+  if (c.kind === 'period-end') return 'The window lasts until the end of the analysed period (it may be longer).';
+  if (c.kind === 'unknown') return `Missing data for ${LIMIT_NAME[c.body]} after ${fmtUtcMs(side.t0 + c.t * 60_000, false)}.`;
+  return `Limited by ${LIMIT_NAME[c.body]}, which drops below the horizon at ${fmtUtcMs(side.t0 + c.t * 60_000)}.`;
 }
 
 /** Varianta cea mai potrivită dintre A și B după regula afișată: încape, apoi cel mai devreme început UTC. */
@@ -58,7 +58,7 @@ export function DecisionSummary({ sides, fits, activityMin, change, model, trust
   const spoken = sides.map((s, i) => `${s.site.short}: ${VERDICT_LABEL[fits[i].kind]}.`).join(' ');
   const top = options[0];
   const more = options.slice(1, 3);
-  const label = trust === 'synthetic' ? 'Rezultat demonstrativ · date sintetice' : trustLabel;
+  const label = trust === 'synthetic' ? 'Demo result · synthetic data' : trustLabel;
   const best = sides.length === 2 ? bestOf(sides, fits) : null;
   const startDiff =
     sides.length === 2 && fits[0].first && fits[1].first ? (sides[1].t0 + fits[1].first.start * 60_000 - (sides[0].t0 + fits[0].first.start * 60_000)) / 60_000 : null;
@@ -66,9 +66,9 @@ export function DecisionSummary({ sides, fits, activityMin, change, model, trust
   return (
     <section className="card decision" aria-labelledby="decision-h">
       <header className="sec-h">
-        <h2 id="decision-h">Comparație și recomandare</h2>
+        <h2 id="decision-h">Comparison and recommendation</h2>
         <span className={`trust trust-${trust}`}>{label}</span>
-        <span className="muted small">Activitate: {fmtDur(activityMin)} continuu, cu Soarele și Pământul vizibile simultan</span>
+        <span className="muted small">Activity: {fmtDur(activityMin)} continuous, with the Sun and Earth visible at the same time</span>
       </header>
       <p className="sr-only" aria-live="polite">
         {spoken}
@@ -84,7 +84,7 @@ export function DecisionSummary({ sides, fits, activityMin, change, model, trust
                 <span className="v-site">
                   {fmtUtcMs(s.t0)}
                 </span>
-                {best === i && <span className="best-chip">Cea mai potrivită dintre cele analizate</span>}
+                {best === i && <span className="best-chip">Best of the analysed options</span>}
               </div>
               <p className="v-main">
                 <span className="v-icon" aria-hidden="true">
@@ -94,20 +94,20 @@ export function DecisionSummary({ sides, fits, activityMin, change, model, trust
               </p>
               {f.kind === 'fits' && f.first && (
                 <p className="v-detail">
-                  Prima fereastră potrivită <b className="mono">{fmtUtcMs(s.t0 + f.first.start * 60_000)}</b> → <b className="mono">{fmtUtcMs(s.t0 + f.first.end * 60_000)}</b>
+                  First suitable window <b className="mono">{fmtUtcMs(s.t0 + f.first.start * 60_000)}</b> → <b className="mono">{fmtUtcMs(s.t0 + f.first.end * 60_000)}</b>
                   <br />
-                  durată {fmtDur(windowLen(f.first))}
-                  {f.first.truncEnd ? '+ (încă deschisă la capătul perioadei analizate)' : ''} · rezervă <b>{fmtDur(f.spareMin)}</b>
+                  length {fmtDur(windowLen(f.first))}
+                  {f.first.truncEnd ? '+ (still open at the end of the analysed period)' : ''} · spare <b>{fmtDur(f.spareMin)}</b>
                   <button type="button" className="link" onClick={() => onShow(s.id, f.first!.start)}>
-                    Arată pe timeline
+                    Show on the timeline
                   </button>
                 </p>
               )}
-              {f.kind === 'insufficient' && <p className="v-detail">Nicio fereastră cunoscută nu este destul de lungă, dar intervalele fără date ar putea ascunde una. Sunt necesare mai multe date.</p>}
+              {f.kind === 'insufficient' && <p className="v-detail">No known window is long enough, but intervals without data could hide one. More data is needed.</p>}
               {f.kind === 'none' && (
                 <p className="v-detail">
-                  Cea mai lungă fereastră comună cunoscută: {fmtDur(windowLen(f.longest))}.
-                  {f.openAtEnd ? ' O fereastră este încă deschisă la capătul perioadei; date ulterioare ar putea-o prelungi.' : ''}
+                  Longest known common window: {fmtDur(windowLen(f.longest))}.
+                  {f.openAtEnd ? ' A window is still open at the end of the period; later data could extend it.' : ''}
                 </p>
               )}
               <p className="v-limit">{limitingText(s, f)}</p>
@@ -122,34 +122,34 @@ export function DecisionSummary({ sides, fits, activityMin, change, model, trust
             {best != null ? (
               <>
                 <b>
-                  Scenariul pentru {sides[best].site.short}, cu start la {fmtUtcMs(sides[best].t0)}, se potrivește cel mai bine criteriilor alese
+                  The option for {sides[best].site.short}, starting {fmtUtcMs(sides[best].t0)}, best matches the chosen criteria
                 </b>
-                {startDiff != null && Math.round(startDiff) !== 0 ? ` — începe cu ${fmtDur(Math.abs(startDiff))} mai devreme.` : '.'}
+                {startDiff != null && Math.round(startDiff) !== 0 ? ` — it starts ${fmtDur(Math.abs(startDiff))} earlier.` : '.'}
               </>
             ) : (
-              <b>Niciuna dintre variante nu oferă o fereastră cunoscută suficient de lungă pentru activitate.</b>
+              <b>Neither option offers a known window long enough for the activity.</b>
             )}{' '}
             {differenceText(windowLen(fits[0].longest), windowLen(fits[1].longest), sides[0].site.short, sides[1].site.short)} {changeSentence(change, model)}
           </p>
           {startDiff != null && (
-            <p className="muted small">Diferența dintre începuturile primelor ferestre potrivite (alternativa față de referință): {fmtSignedDur(startDiff)}.</p>
+            <p className="muted small">Difference between the starts of the first suitable windows (alternative minus reference): {fmtSignedDur(startDiff)}.</p>
           )}
         </div>
       )}
       <p className="rule small">
-        <b>Regulă:</b> o variantă „se încadrează” dacă activitatea încape într-o fereastră comună cunoscută; dintre variantele care se încadrează, este preferată cea cu cel mai devreme început UTC.{' '}
-        <b>Limitări:</b> doar geometrie (iluminare și vizibilitate spre Pământ); nu este o evaluare a siguranței aterizării, a terenului, a puterii electrice sau a legăturii radio.
+        <b>Rule:</b> an option “fits” if the activity fits in a known common window; among those that fit, the one with the earliest UTC start is preferred.{' '}
+        <b>Limits:</b> geometry only (sunlight and line of sight to Earth); not an assessment of landing safety, terrain, electrical power or radio links.
       </p>
 
       <div className="alt" aria-labelledby="alt-h">
         <div className="alt-h">
-          <h3 id="alt-h">Cea mai devreme alternativă din datele încărcate</h3>
-          {trust !== 'validated' && <span className="trust trust-synthetic">{trust === 'synthetic' ? 'Sugestie demonstrativă — nu este o recomandare de misiune' : 'Date nevalidate — doar preliminar'}</span>}
+          <h3 id="alt-h">Earliest alternative in the loaded data</h3>
+          {trust !== 'validated' && <span className="trust trust-synthetic">{trust === 'synthetic' ? 'Demo suggestion — not a mission recommendation' : 'Data not validated — preliminary only'}</span>}
         </div>
         <p className="muted small">
-          De la {fmtUtcMs(readyFromMs)} încolo, pentru {sites.length} {sites.length === 1 ? 'zonă încărcată' : 'zone încărcate'}. {RANKING_RULE}
+          From {fmtUtcMs(readyFromMs)} onwards, across {sites.length} {sites.length === 1 ? 'loaded site' : 'loaded sites'}. {RANKING_RULE}
         </p>
-        {!top && <p className="alt-none">Niciun scenariu încărcat care începe la sau după acest moment nu are o fereastră cunoscută de {fmtDur(activityMin)}. Setul analizat nu oferă o alternativă.</p>}
+        {!top && <p className="alt-none">No loaded scenario from this moment on has a known {fmtDur(activityMin)} window. The analysed set offers no alternative.</p>}
         {top && (
           <ol className="alt-list">
             {[top, ...more].map((o, i) => {
@@ -162,16 +162,16 @@ export function DecisionSummary({ sides, fits, activityMin, change, model, trust
                     <span className="muted">
                       {' '}
                       ({fmtDur(o.lengthMin)}
-                      {o.truncatedEnd ? '+' : ''}, rezervă {fmtDur(o.spareMin)})
+                      {o.truncatedEnd ? '+' : ''}, spare {fmtDur(o.spareMin)})
                     </span>
                   </span>
                   {inB ? (
                     <button type="button" className="btn sm" onClick={() => onShow('B', o.offsetMin)}>
-                      Arată alternativa selectată
+                      Show the selected alternative
                     </button>
                   ) : (
                     <button type="button" className={`btn sm${i === 0 ? ' primary' : ''}`} onClick={() => onUse(o)}>
-                      Folosește ca alternativă
+                      Use as alternative
                     </button>
                   )}
                 </li>

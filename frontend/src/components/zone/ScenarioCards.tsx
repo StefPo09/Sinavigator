@@ -37,7 +37,7 @@ export function PlanAControls({ cat, sel, onChange }: { cat: Catalog; sel: Sel; 
   return (
     <div className="controls">
       <ChipGroup
-        label="Zonă"
+        label="Site"
         value={sel.siteId}
         options={siteOptions(cat)}
         onChange={(id) => onChange({ siteId: id, startMs: sel.startMs != null && has(cat, id, sel.startMs) ? sel.startMs : null })}
@@ -45,46 +45,46 @@ export function PlanAControls({ cat, sel, onChange }: { cat: Catalog; sel: Sel; 
       <ChipGroup
         label="Start (UTC)"
         value={sel.startMs}
-        options={cat.starts.map((ms) => ({ value: ms, label: fmtDateShort(ms), reason: has(cat, sel.siteId, ms) ? undefined : `necalculat pentru ${site.short}` }))}
+        options={cat.starts.map((ms) => ({ value: ms, label: fmtDateShort(ms), reason: has(cat, sel.siteId, ms) ? undefined : `not computed for ${site.short}` }))}
         onChange={(ms) => onChange({ ...sel, startMs: ms })}
       />
-      <StartLine ms={sel.startMs} missing={`Alege un start disponibil pentru ${site.short}; startul anterior nu este calculat pentru această zonă.`} />
+      <StartLine ms={sel.startMs} missing={`Choose an available start for ${site.short}; the previous start is not computed for this site.`} />
     </div>
   );
 }
 
 export function PlanBControls({ cat, a, sel, onChange }: { cat: Catalog; a: Sel; sel: Sel; onChange: (s: Sel) => void }) {
   const site = cat.sites.find((s) => s.id === sel.siteId)!;
-  const reference = cat.sites.find((s) => s.id === a.siteId)?.short ?? 'scenariul de referință';
+  const reference = cat.sites.find((s) => s.id === a.siteId)?.short ?? 'the reference option';
   const delta = a.startMs != null && sel.startMs != null ? (sel.startMs - a.startMs) / H : null;
   const delays = [0, 24, 72];
   return (
     <div className="controls">
       <ChipGroup
-        label="Zonă"
+        label="Site"
         value={sel.siteId}
         options={siteOptions(cat)}
         onChange={(id) => onChange({ siteId: id, startMs: sel.startMs != null && has(cat, id, sel.startMs) ? sel.startMs : null })}
       />
       <ChipGroup
-        label={`Start față de ${reference}`}
+        label={`Start relative to ${reference}`}
         value={delta != null && delays.includes(delta) ? delta : null}
         options={delays.map((dh) => ({
           value: dh,
-          label: dh === 0 ? 'Același start' : `+${dh} h`,
+          label: dh === 0 ? 'Same start' : `+${dh} h`,
           reason:
             a.startMs == null
-              ? `alege mai întâi un start pentru ${reference}`
+              ? `choose a start for ${reference} first`
               : has(cat, sel.siteId, a.startMs + dh * H)
                 ? undefined
-                : `${site.short} nu are date pentru startul ${fmtDateShort(a.startMs + dh * H)}`,
+                : `${site.short} has no data for the ${fmtDateShort(a.startMs + dh * H)} start`,
         }))}
         onChange={(dh) => a.startMs != null && onChange({ ...sel, startMs: a.startMs + dh * H })}
       />
       <StartLine
         ms={sel.startMs}
-        extra={delta != null ? `${fmtDeltaH(delta)} față de ${reference}` : undefined}
-        missing={`${site.short} nu are scenariu la startul curent. Alege una dintre întârzierile disponibile de mai sus.`}
+        extra={delta != null ? `${fmtDeltaH(delta)} relative to ${reference}` : undefined}
+        missing={`${site.short} has no scenario at the current start. Pick one of the available delays above.`}
       />
     </div>
   );
@@ -99,7 +99,7 @@ function StartLine({ ms, extra, missing }: { ms: number | null; extra?: string; 
     );
   return (
     <p className="startline">
-      <span className="k">Start efectiv</span> <b className="mono">{fmtUtcMs(ms)}</b>
+      <span className="k">Actual start</span> <b className="mono">{fmtUtcMs(ms)}</b>
       {extra && <span className="delta-chip">{extra}</span>}
     </p>
   );
@@ -122,7 +122,7 @@ export function ScenarioEvidence({ side, model, cursor, range, highlight }: Evid
   const idx = sampleIndex(an, cursor);
   const sunState = segAt(an.sun.segs, cursor).state;
   const earthState = segAt(an.earth.segs, cursor).state;
-  const label = `Orizontul la ${side.site.short}, ${fmtUtcMs(side.t0 + cursor * 60_000)}: Soarele ${STATE_TEXT[sunState].toLowerCase()}, Pământul ${STATE_TEXT[earthState].toLowerCase()}. Valorile sunt în tabelul de mai jos.`;
+  const label = `Horizon at ${side.site.short}, ${fmtUtcMs(side.t0 + cursor * 60_000)}: Sun ${STATE_TEXT[sunState].toLowerCase()}, Earth ${STATE_TEXT[earthState].toLowerCase()}. The values are in the table below.`;
   return (
     <div className="evidence">
       <SkyPanorama a={an} profile={side.profile} model={model} idx={idx} sunState={sunState} earthState={earthState} range={range} highlight={highlight} label={label} />
@@ -135,20 +135,20 @@ function ReadoutTable({ side, model, cursor, highlight }: { side: Side; model: M
   const { an } = side;
   const idx = sampleIndex(an, cursor);
   return (
-    <div className="readout-wrap" role="region" aria-label={`Valorile pentru ${side.site.short} la momentul selectat`} tabIndex={0}>
+    <div className="readout-wrap" role="region" aria-label={`Values for ${side.site.short} at the selected moment`} tabIndex={0}>
     <table className="readout">
       <caption className="sr-only">
-        Valorile pentru {side.site.short} la {fmtUtcMs(side.t0 + cursor * 60_000)}
+        Values for {side.site.short} at {fmtUtcMs(side.t0 + cursor * 60_000)}
       </caption>
       <thead>
         <tr>
-          <th scope="col">Corp</th>
-          <th scope="col">Azimut</th>
-          <th scope="col">Elevație</th>
-          <th scope="col">{model === 'ideal' ? 'Orizont' : 'Teren'}</th>
-          <th scope="col">Marjă</th>
-          <th scope="col">Necesar</th>
-          <th scope="col">Stare</th>
+          <th scope="col">Body</th>
+          <th scope="col">Azimuth</th>
+          <th scope="col">Elevation</th>
+          <th scope="col">{model === 'ideal' ? 'Horizon' : 'Terrain'}</th>
+          <th scope="col">Margin</th>
+          <th scope="col">Required</th>
+          <th scope="col">State</th>
         </tr>
       </thead>
       <tbody>

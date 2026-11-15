@@ -10,10 +10,10 @@
   border: 0;
   overflow: auto;
   color: var(--text);
-  background: radial-gradient(ellipse at 50% 45%, #18212b 0, #0c1015 65%);
+  background: var(--bg);
 }
 
-.dialog::backdrop { background: #0c1015; }
+.dialog::backdrop { background: var(--bg); }
 :global(html):has(.dialog[open]) { overflow: hidden; }
 
 .content {
@@ -26,16 +26,16 @@
   text-align: center;
 }
 
-.content h2 { font-size: clamp(28px, 5vw, 54px); line-height: 1.1; }
+.content h2 { font-size: clamp(24px, 3.4vw, 34px); line-height: 1.15; }
 .content p { color: var(--muted); }
-.content :global(.k) { color: var(--accent); }
+
 .content :global(.row) { justify-content: center; }
 .diagram { width: min(680px, 100%, 102svh); height: auto; }
 .diagram text {
   font-family: var(--sans), sans-serif;
   font-size: 17px;
   paint-order: stroke;
-  stroke: #0c1015;
+  stroke: var(--bg);
   stroke-width: 4px;
   stroke-linejoin: round;
 }
@@ -45,22 +45,4 @@
 .flight { display: grid; width: min(520px, 100%); gap: 7px; }
 .track { overflow: hidden; height: 4px; border-radius: 999px; background: #334252; }
 .track span { display: block; height: 100%; background: var(--accent); }
-.modelNote { max-width: 56ch; font-size: 12px; }
-
-.moon {
-  width: clamp(64px, 12vw, 110px);
-  aspect-ratio: 1;
-  margin-bottom: 18px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 33% 27%, #e0e5eb, #88919c 50%, #303845 84%);
-  box-shadow: 0 0 45px #a6b4c629;
-  animation: breathe 2.8s ease-in-out infinite;
-}
-
-@keyframes breathe {
-  50% { box-shadow: 0 0 60px #a6b4c649; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .moon { animation: none; }
-}
+.modelNote { max-width: 62ch; font-size: 13px; }

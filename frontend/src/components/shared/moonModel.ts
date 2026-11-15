@@ -26,10 +26,7 @@ export function loadMoonModel(): Promise<THREE.Object3D | null> {
     const root = gltf.scene;
     root.traverse((o) => {
       const m = o as THREE.Mesh;
-      if (m.isMesh) {
-        m.userData.shared = true;
-        latLonMapping(m.material as THREE.MeshStandardMaterial, false);
-      }
+      if (m.isMesh) latLonMapping(m.material as THREE.MeshStandardMaterial, false);
     });
     root.scale.setScalar(1 / MODEL_MEAN_RADIUS);
     root.updateMatrixWorld(true);

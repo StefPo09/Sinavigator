@@ -18,8 +18,8 @@ export function CauseSummary({ sides, fits, model, cursor, onEvent }: Props) {
   return (
     <section className="card cause" aria-labelledby="cause-h">
       <header className="sec-h">
-        <h2 id="cause-h">De ce se închide fereastra</h2>
-        <span className="muted small">Propoziții-șablon completate cu valori calculate; fără model de limbaj.</span>
+        <h2 id="cause-h">Why the window closes</h2>
+        <span className="muted small">Template sentences filled with computed values; no language model.</span>
       </header>
       <div className="cause-grid">
         {sides.map((s, i) => {
@@ -32,7 +32,7 @@ export function CauseSummary({ sides, fits, model, cursor, onEvent }: Props) {
             <article key={s.id} className="cause-col">
               <div className="cause-h">
                 <Tag id={s.id} label={s.site.short} />
-                <span>{f.first ? 'Prima fereastră potrivită' : w ? 'Cea mai lungă fereastră comună cunoscută' : 'Nicio fereastră comună'}</span>
+                <span>{f.first ? 'First suitable window' : w ? 'Longest known common window' : 'No common window'}</span>
                 {w && (
                   <span className="mono muted">
                     {fmtUtcMs(s.t0 + w.start * 60_000, true)} · {fmtDur(windowLen(w))}
@@ -44,26 +44,26 @@ export function CauseSummary({ sides, fits, model, cursor, onEvent }: Props) {
                   <p className="cause-text">{causeText(s.an, c, model, s.t0)}</p>
                   {c.kind !== 'period-end' && (
                     <button type="button" className="btn sm" onClick={() => onEvent(s.id, c.t, c.body)}>
-                      Mergi la momentul închiderii
+                      Go to the closing moment
                     </button>
                   )}
                 </>
               ) : (
-                <p className="cause-text">Soarele și Pământul nu sunt niciodată cunoscute ca vizibile simultan în perioada analizată.</p>
+                <p className="cause-text">The Sun and Earth are never known to be visible at the same time in the analysed period.</p>
               )}
 
               <div className="atcursor">
-                <p className="k">La momentul selectat · {fmtUtcMs(s.t0 + cursor * 60_000)}</p>
+                <p className="k">At the selected moment · {fmtUtcMs(s.t0 + cursor * 60_000)}</p>
                 {lim.body && (
                   <p className="limit">
-                    <BodyIcon body={lim.body} /> Corpul limitativ: <b>{BODY_NAME[lim.body]}</b>
+                    <BodyIcon body={lim.body} /> Limiting body: <b>{BODY_NAME[lim.body]}</b>
                     {lim.excess != null ? (
                       <>
                         {' '}
-                        · marjă rămasă peste prag <b className="mono">{fmtDeg(lim.excess, 2, true)}</b>
+                        · margin left above the threshold <b className="mono">{fmtDeg(lim.excess, 2, true)}</b>
                       </>
                     ) : (
-                      ' · terenul sau poziția lui sunt necunoscute aici'
+                      ' · its terrain or position is unknown here'
                     )}
                   </p>
                 )}
@@ -71,7 +71,7 @@ export function CauseSummary({ sides, fits, model, cursor, onEvent }: Props) {
                   const ev = nextEvent(s.an.segs[k], cursor);
                   return (
                     <div className="cd" key={k}>
-                      <StatePill state={ev.state} label={k === 'both' ? 'Ambele' : BODY_NAME[k]} />
+                      <StatePill state={ev.state} label={k === 'both' ? 'Both' : BODY_NAME[k]} />
                       <span>{countdownText(k, ev, end)}</span>
                     </div>
                   );

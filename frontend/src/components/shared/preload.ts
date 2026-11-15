@@ -16,21 +16,10 @@ export interface PreloadStatus {
 
 export async function preloadAll(sites: string[], quality: Quality, onStatus: (s: PreloadStatus) => void): Promise<{ failed: string[] }> {
   const tasks: [string, () => Promise<unknown>][] = [
-    ['Moon relief (LRO, 81.5 MB)', async () => {
-      if (!(await loadMoonModel())) throw new Error('Moon model is unavailable');
-    }],
-    ...sites.map((id): [string, () => Promise<unknown>] => [
-      `Terrain ${id.replace('apollo', 'Apollo ')}`,
-      async () => {
-        if (!(await loadSiteTerrain(id, quality))) throw new Error(`Terrain data for ${id} is unavailable`);
-      },
-    ]),
+    ['Moon relief (LRO, 81.5 MB)', () => loadMoonModel()],
+    ...sites.map((id): [string, () => Promise<unknown>] => [`Terrain ${id.replace('apollo', 'Apollo ')}`, () => loadSiteTerrain(id, quality)]),
     ['Rocks', () => preloadRocks()],
-    ['Sky and planet textures', () => Promise.all(Object.values(TEX).map(async (url) => {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`Could not load ${url}: ${response.status}`);
-      return response.blob();
-    }))],
+    ['Sky and planet textures', () => Promise.all(Object.values(TEX).map((u) => fetch(u).then((r) => r.blob())))],
   ];
   let done = 0;
   let moonPct: number | null = null;

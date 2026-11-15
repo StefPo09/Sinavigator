@@ -105,7 +105,6 @@ export function loadSiteTerrain(id: string, quality: Quality): Promise<SiteTerra
       });
       close.updateMatrixWorld(true);
       near.updateMatrixWorld(true);
-      for (const root of [close, near, far]) root.traverse((o) => { o.userData.shared = true; });
       const ray = new THREE.Raycaster();
       const down = new THREE.Vector3(0, -1, 0);
       const heightAt = (x: number, z: number) => {

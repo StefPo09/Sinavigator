@@ -35,9 +35,8 @@ function loadVariants(): Promise<THREE.Mesh[]> {
   return variants;
 }
 
-export async function preloadRocks(): Promise<void> {
-  await loadVariants();
-}
+/** Preload for presentation mode: downloads and decodes the rock variants once. */
+export const preloadRocks = () => loadVariants();
 
 export interface ScatterOpts {
   count: number;

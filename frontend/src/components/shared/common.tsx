@@ -62,8 +62,8 @@ export function BodyIcon({ body }: { body: 'sun' | 'earth' }) {
   );
 }
 
-export const BODY_NAME = { sun: 'Soarele', earth: 'Pământul' } as const;
-export const STATE_TEXT: Record<VisState, string> = { vis: 'Vizibil', hid: 'Ascuns', unk: 'Necunoscut' };
+export const BODY_NAME = { sun: 'Sun', earth: 'Earth' } as const;
+export const STATE_TEXT: Record<VisState, string> = { vis: 'Visible', hid: 'Hidden', unk: 'Unknown' };
 const STATE_MARK: Record<VisState, string> = { vis: '●', hid: '○', unk: '?' };
 
 export function StatePill({ state, label }: { state: VisState; label?: string }) {

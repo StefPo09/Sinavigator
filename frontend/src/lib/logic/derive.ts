@@ -217,19 +217,20 @@ export function assessFit(a: Analysis, activityMin: number): Fit {
   const last = both[both.length - 1];
   const openAtEnd = last.state === 'vis' && last.truncEnd;
   if (first) return { kind: 'fits', first, spareMin: first.end - first.start - activityMin, longest: a.longest, openAtEnd };
-  // no known window fits: could an unknown span hide one?
+  // no known window fits: could an unknown span hide one? A run of visible/unknown segments
+  // (no known hidden time inside) that contains unknown data and is long enough might.
   let runStart: number | null = null;
   let hasUnk = false;
   let insufficient = false;
-  for (const s of [...both, { state: 'hid' as VisState, start: a.totalMin, end: a.totalMin }]) {
+  for (const s of both) {
     if (s.state === 'hid') {
-      if (hasUnk && runStart != null && s.end - runStart >= activityMin - EPS) insufficient = true;
       runStart = null;
       hasUnk = false;
-    } else {
-      runStart ??= s.start;
-      if (s.state === 'unk') hasUnk = true;
+      continue;
     }
+    runStart ??= s.start;
+    if (s.state === 'unk') hasUnk = true;
+    if (hasUnk && s.end - runStart >= activityMin - EPS) insufficient = true;
   }
   return { kind: insufficient ? 'insufficient' : 'none', first: null, spareMin: 0, longest: a.longest, openAtEnd };
 }
