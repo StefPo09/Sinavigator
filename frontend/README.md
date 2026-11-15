@@ -16,11 +16,12 @@ proxies to the Python backend at `http://127.0.0.1:8000`. Start the backend
 alongside Next.js for API-backed data; the frontend retains a static bundle
 fallback for deployments that have not enabled the API yet.
 
-The lunar globe's day/night lighting and the selected-site sky readings follow
-the bundle's 10-minute Sun/Earth azimuth and elevation samples from NASA/JPL
-Horizons DE441. The selected UTC time is interpolated between samples; no
-positions are extrapolated beyond the bundle's coverage (currently Nov 27–Dec
-3, 2026). Terrain provenance and source links are included in the bundle.
+The lunar globe and Apollo landing-surface lighting, along with selected-site
+sky readings, follow the bundle's 10-minute Sun/Earth azimuth and elevation
+samples from NASA/JPL Horizons DE441. The selected UTC time is interpolated
+between samples; no positions are extrapolated beyond the bundle's coverage
+(currently Nov 27–Dec 3, 2026). Surface visibility uses the LROC NAC DTM
+horizon profile. Terrain provenance and source links are included in the bundle.
 
 ## Source structure
 
