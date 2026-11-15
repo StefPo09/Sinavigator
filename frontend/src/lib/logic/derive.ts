@@ -223,6 +223,7 @@ export function assessFit(a: Analysis, activityMin: number): Fit {
   let insufficient = false;
   for (const s of [...both, { state: 'hid' as VisState, start: a.totalMin, end: a.totalMin }]) {
     if (s.state === 'hid') {
+      if (hasUnk && runStart != null && s.end - runStart >= activityMin - EPS) insufficient = true;
       runStart = null;
       hasUnk = false;
     } else {

@@ -1,8 +1,8 @@
 // Run with: npm test   (Node's built-in test runner; Node ≥ 23 strips TypeScript types)
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { Rules, Scenario } from '@/lib/data/types.ts';
-import { analyse, assessFit, closingCause, type Segment } from '@/lib/logic/derive.ts';
+import type { Rules, Scenario } from '../src/lib/data/types.ts';
+import { analyse, assessFit, closingCause, type Segment } from '../src/lib/logic/derive.ts';
 
 const STEP = 10;
 const rules = (earth = 0): Rules => ({ sunMarginDeg: 0, earthMarginDeg: earth });

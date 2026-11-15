@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import type { Bundle } from '@/lib/data/types.ts';
-import { validateBundle } from '@/lib/data/validate.ts';
-import { analyse, assessFit } from '@/lib/logic/derive.ts';
-import { catalog, defaults, find } from '@/lib/logic/scenarios.ts';
+import type { Bundle } from '../src/lib/data/types.ts';
+import { validateBundle } from '../src/lib/data/validate.ts';
+import { analyse, assessFit } from '../src/lib/logic/derive.ts';
+import { catalog, defaults, find } from '../src/lib/logic/scenarios.ts';
 
 const bundle: Bundle = JSON.parse(readFileSync(new URL('../public/data/bundle.json', import.meta.url), 'utf8'));
 

@@ -38,3 +38,15 @@ horizon profile. Terrain provenance and source links are included in the bundle.
 Routing uses the existing Next.js App Router and shared workspace state; no
 additional client router is needed. The Python backend is a separate service,
 so no duplicate Next.js API handlers are added.
+
+## Learning and presentation tools
+
+The workspace header switches between **Elev** (the guided mission) and
+**Planificator** (the detailed scenario comparison). The quiz and tutorial use
+the same loaded bundle and analysis rules as the main workspace. The tutorial
+opens on a first visit and can be reopened from the header; append `?tour=0` to
+skip its automatic launch.
+
+**Pregătește prezentarea** preloads lunar relief, both sites' terrain, rocks,
+and sky/planet textures. This is optional and downloads the 81.5 MB lunar model
+in addition to the selected terrain assets.

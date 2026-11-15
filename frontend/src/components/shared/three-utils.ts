@@ -130,6 +130,7 @@ export function starField(count: number, radius: number, seed = 11): THREE.Point
 export function disposeScene(root: THREE.Object3D) {
   root.traverse((o) => {
     const m = o as THREE.Mesh;
+    if (m.userData.shared) return;
     m.geometry?.dispose?.();
     const mats = Array.isArray(m.material) ? m.material : m.material ? [m.material] : [];
     for (const mat of mats) {
