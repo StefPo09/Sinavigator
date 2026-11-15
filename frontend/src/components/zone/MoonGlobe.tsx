@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DObject, CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 import type { LandingSite } from '@/lib/data/landingSites';
+import type { Direction3 } from '@/lib/logic/bundleEphemeris';
 import type { Quality } from '../shared/quality';
 import { starBackground, tex, TEX } from '../shared/bodies';
 import { animate, disposeScene, easeOutCubic, latLonMapping, prefersReducedMotion } from '../shared/three-utils';
@@ -71,6 +72,7 @@ interface Props {
   onModel: (s: MoonModelState) => void;
   landing: LandingSite[];
   landingId: string | null;
+  sunDirection: Direction3 | null;
   onLanding: (id: string) => void;
   quality: Quality;
   /** intrare: din spațiu („far”), de la suprafața locului („site”) sau fără animație */
@@ -92,9 +94,13 @@ function surface(latDeg: number, lonDeg: number, r = 1): THREE.Vector3 {
 
 const NEAR_SIDE = new THREE.Vector3(3.45, 0.12, 0); // longitudinea 0°, fața vizibilă de pe Pământ
 
-export default function MoonGlobe({ onFail, onModel, landing, landingId, onLanding, quality, intro, focus, flyToFocus, onArrive }: Props) {
+export default function MoonGlobe({ onFail, onModel, landing, landingId, sunDirection, onLanding, quality, intro, focus, flyToFocus, onArrive }: Props) {
   const host = useRef<HTMLDivElement>(null);
-  const api = useRef<{ select: (id: string | null) => void; fly: (lat: number, lon: number, done: () => void) => void } | null>(null);
+  const api = useRef<{
+    select: (id: string | null) => void;
+    fly: (lat: number, lon: number, done: () => void) => void;
+    illuminate: (direction: Direction3 | null) => void;
+  } | null>(null);
   const arriveRef = useRef(onArrive);
   useEffect(() => {
     arriveRef.current = onArrive;
@@ -145,11 +151,16 @@ export default function MoonGlobe({ onFail, onModel, landing, landingId, onLandi
     latLonMapping(moonMat, true);
     const moon = new THREE.Mesh(new THREE.SphereGeometry(1, 128, 96), moonMat);
     scene.add(moon);
-    scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+    const ambient = new THREE.AmbientLight(0xffffff, sunDirection ? 0.2 : 0.75);
+    scene.add(ambient);
     const key = new THREE.DirectionalLight(0xffffff, 1.6);
-    camera.add(key);
-    key.position.set(1.5, 1.5, 1);
-    scene.add(camera);
+    const illuminate = (direction: Direction3 | null) => {
+      key.visible = direction != null;
+      ambient.intensity = direction ? 0.2 : 0.75;
+      if (direction) key.position.set(direction.x * 5, direction.y * 5, direction.z * 5);
+    };
+    scene.add(key, key.target, camera);
+    illuminate(sunDirection);
 
     type Marker = { dot: THREE.Mesh; ring: THREE.Mesh; label: CSS2DObject; normal: THREE.Vector3 };
     const markers = new Map<string, Marker>();
@@ -233,7 +244,7 @@ export default function MoonGlobe({ onFail, onModel, landing, landingId, onLandi
       }, ease);
     };
     const fly = (lat: number, lon: number, done: () => void) => flyPath(camera.position.clone(), surface(lat, lon, 1.03), 2000, done);
-    api.current = { select, fly };
+    api.current = { select, fly, illuminate };
     select(landingId);
     // animația de intrare
     if (intro === 'far') flyPath(NEAR_SIDE.clone().multiplyScalar(9), NEAR_SIDE, 2200, undefined, easeOutCubic);
@@ -346,6 +357,7 @@ export default function MoonGlobe({ onFail, onModel, landing, landingId, onLandi
   }, [landing, quality]);
 
   useEffect(() => api.current?.select(landingId), [landingId]);
+  useEffect(() => api.current?.illuminate(sunDirection), [sunDirection]);
   useEffect(() => {
     const f = focusRef.current;
     if (flyToFocus && f) api.current?.fly(f.latDeg, f.lonDeg, () => arriveRef.current());

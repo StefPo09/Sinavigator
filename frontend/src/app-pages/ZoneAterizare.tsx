@@ -5,6 +5,7 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { LANDING_SITES } from '@/lib/data/landingSites';
+import { localSkyDirection, siteSkyAt } from '@/lib/logic/bundleEphemeris';
 import { TimeBar } from '../components/shared/TimeBar';
 import { webglAvailable } from '../components/shared/three-utils';
 import type { WS } from '../components/shared/types';
@@ -35,6 +36,8 @@ export function ZoneAterizareView({ ws }: { ws: WS }) {
   }, [analysis]);
 
   const focus = ws.landing;
+  const sky = focus ? siteSkyAt(ws.bundle, focus.id, ws.timeMs) : null;
+  const sunDirection = focus && sky ? localSkyDirection(focus.latDeg, focus.lonDeg, sky.sun) : null;
   const flyLanding = (id: string) => {
     ws.selectLanding(id);
     ws.go('suprafata');
@@ -69,6 +72,7 @@ export function ZoneAterizareView({ ws }: { ws: WS }) {
               onModel={setMoonModel}
               landing={LANDING_SITES}
               landingId={ws.landing?.id ?? null}
+              sunDirection={sunDirection}
               onLanding={flyLanding}
               quality={ws.quality}
               intro={ws.prevStage === 'sistem' ? 'far' : ws.prevStage === 'suprafata' ? 'site' : 'none'}

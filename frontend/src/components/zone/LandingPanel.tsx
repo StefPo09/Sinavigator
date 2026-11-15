@@ -1,17 +1,18 @@
 'use client';
 
 import { QUALITY_LABEL } from '@/lib/data/landingSites';
-import { approxLocalSky, LOCAL_SKY_LABEL } from '@/lib/logic/ephemeris';
+import { siteSkyAt } from '@/lib/logic/bundleEphemeris';
 import { fmtUtcMs } from '@/lib/logic/format';
 import type { WS } from '../shared/types';
 
 const fmtLat = (v: number) => `${Math.abs(v).toFixed(4)}° ${v < 0 ? 'S' : 'N'}`;
 const fmtLon = (v: number) => `${Math.abs(v).toFixed(4)}° ${v < 0 ? 'V' : 'E'}`;
+const HORIZONS_URL = 'https://ssd.jpl.nasa.gov/horizons/';
 
-/** Panoul unui loc real de aterizare: identitate, sursă, teren disponibil, cer aproximativ. */
+/** Panoul unui loc real de aterizare: identitate, sursă, teren disponibil și cer eșantionat. */
 export function LandingPanel({ ws }: { ws: WS }) {
   const l = ws.landing!;
-  const sky = approxLocalSky(ws.timeMs, l.latDeg, l.lonDeg);
+  const sky = siteSkyAt(ws.bundle, l.id, ws.timeMs);
   return (
     <div className="zone-panel">
       <header className="zp-h">
@@ -43,17 +44,27 @@ export function LandingPanel({ ws }: { ws: WS }) {
 
       <div className="zp-summary">
         <p className="zp-time">
-          <span className="k">Cer aproximativ la data analizată</span> <b className="mono">{fmtUtcMs(ws.timeMs)}</b>
+          <span className="k">Cer local din datele NASA/JPL Horizons</span> <b className="mono">{fmtUtcMs(ws.timeMs)}</b>
         </p>
-        <ul className="zp-events">
-          <li>
-            <span className="k">Soarele</span> elevație ≈ {sky.sun.elDeg.toFixed(0)}°, azimut ≈ {sky.sun.azDeg.toFixed(0)}° {sky.sun.elDeg > 0 ? '(zi)' : '(noapte)'}
-          </li>
-          <li>
-            <span className="k">Pământul</span> elevație ≈ {sky.earth.elDeg.toFixed(0)}°, azimut ≈ {sky.earth.azDeg.toFixed(0)}° {sky.earth.elDeg > 0 ? '' : '(sub orizont — fața ascunsă)'}
-          </li>
-        </ul>
-        <p className="muted small">{LOCAL_SKY_LABEL}</p>
+        {sky ? (
+          <>
+            <ul className="zp-events">
+              <li>
+                <span className="k">Soarele</span> elevație {sky.sun.elDeg.toFixed(1)}°, azimut {sky.sun.azDeg.toFixed(1)}° {sky.sun.elDeg > 0 ? '(deasupra orizontului)' : '(sub orizont)'}
+              </li>
+              {sky.earth && (
+                <li>
+                  <span className="k">Pământul</span> elevație {sky.earth.elDeg.toFixed(1)}°, azimut {sky.earth.azDeg.toFixed(1)}° {sky.earth.elDeg > 0 ? '' : '(sub orizont)'}
+                </li>
+              )}
+            </ul>
+            <p className="muted small">
+              Iluminarea globului urmează poziția Soarelui eșantionată la 10 minute din <a href={HORIZONS_URL} target="_blank" rel="noreferrer">JPL Horizons</a> (DE441), interpolată la timpul selectat. Scenariul: {sky.scenarioId}.
+            </p>
+          </>
+        ) : (
+          <p className="muted small">Nu există date JPL Horizons pentru locul și momentul selectat; iluminarea din date este oprită în afara intervalului acoperit.</p>
+        )}
       </div>
 
       <button type="button" className="btn primary wide" onClick={() => ws.go('suprafata')}>
