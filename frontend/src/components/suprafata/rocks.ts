@@ -35,6 +35,10 @@ function loadVariants(): Promise<THREE.Mesh[]> {
   return variants;
 }
 
+export async function preloadRocks(): Promise<void> {
+  await loadVariants();
+}
+
 export interface ScatterOpts {
   count: number;
   /** raza maximă (m) în jurul observatorului */

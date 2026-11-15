@@ -1,7 +1,7 @@
 // Verifică modelul analitic aproximativ folosit DOAR în scena schematică a sistemului.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { moonGeocentric, moonPhase, sunGeocentric } from '@/lib/logic/ephemeris.ts';
+import { moonGeocentric, moonPhase, sunGeocentric } from '../src/lib/logic/ephemeris.ts';
 
 test('Soarele este la ~0° longitudine la echinocțiul din 20 mar 2025, 09:01 UTC', () => {
   const lon = sunGeocentric(Date.UTC(2025, 2, 20, 9, 1)).lonDeg;

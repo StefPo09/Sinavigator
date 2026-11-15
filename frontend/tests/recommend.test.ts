@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { Scenario } from '@/lib/data/types.ts';
-import { analyse, type Analysis } from '@/lib/logic/derive.ts';
-import { findOptions } from '@/lib/logic/recommend.ts';
+import type { Scenario } from '../src/lib/data/types.ts';
+import { analyse, type Analysis } from '../src/lib/logic/derive.ts';
+import { findOptions } from '../src/lib/logic/recommend.ts';
 
 const STEP = 60;
 const H = 3_600_000;

@@ -77,6 +77,7 @@ export interface WS {
 
   note: string;
   setNote: (s: string) => void;
+  showMission: () => void;
   go: (p: Perspective) => void;
   /** perspectiva curentă și cea din care s-a venit (pentru animațiile de intrare) */
   stage: Perspective;

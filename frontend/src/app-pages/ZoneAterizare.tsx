@@ -10,7 +10,7 @@ import { TimeBar } from '../components/shared/TimeBar';
 import { webglAvailable } from '../components/shared/three-utils';
 import type { WS } from '../components/shared/types';
 import { Comparison } from '../components/zone/Comparison';
-import { LandingPanel } from '../components/zone/LandingPanel';
+import { SiteInspector } from '../components/zone/SiteInspector';
 import type { MoonModelState } from '../components/zone/MoonGlobe';
 
 const MoonGlobe = dynamic(() => import('../components/zone/MoonGlobe'), {
@@ -100,18 +100,7 @@ export function ZoneAterizareView({ ws }: { ws: WS }) {
       </section>
 
       <aside className="workspace-inspector" aria-label="Locuri și informații">
-        <div className="inspector-heading">
-          <div>
-            <p className="k">{ws.landing ? 'Loc selectat' : 'Locuri de aterizare'}</p>
-            <h2>{ws.landing?.name ?? 'Alege un loc'}</h2>
-          </div>
-          <span aria-hidden="true" className="body-dot site-dot" />
-        </div>
-        {ws.landing ? (
-          <div className="panel-body" key={ws.landing.id}><LandingPanel ws={ws} /></div>
-        ) : (
-          <p className="muted small">Selectează Apollo 15 sau Apollo 17 din bara laterală pentru detalii. Apasă pe marcajul de pe glob pentru a intra pe suprafață.</p>
-        )}
+        <SiteInspector ws={ws} />
 
         <button type="button" className="btn wide" onClick={() => setAnalysis(true)}>
           Analiză și comparație

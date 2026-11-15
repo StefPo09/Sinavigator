@@ -1,5 +1,6 @@
 import { LANDING_SITES } from "@/lib/data/landingSites";
 import type { Perspective, WS } from "./types";
+import Image from "next/image";
 
 const perspectives: { id: Perspective; label: string }[] = [
   { id: "sistem", label: "Sistem solar" },
@@ -10,8 +11,7 @@ const perspectives: { id: Perspective; label: string }[] = [
 export function Brand() {
   return (
     <div className="brand">
-      <span className="brand-orbit" aria-hidden="true" />
-      <h1>Sinavigator</h1>
+      <h1><Image src="/brand/sinavigator-logo.svg" alt="Sinavigator" width={190} height={54} priority /></h1>
       <p>Observatorul tău lunar</p>
     </div>
   );
@@ -56,7 +56,7 @@ export function WorkspaceNavigation({
           </button>
         ))}
         {perspective !== "sistem" && (
-          <div className="nav-group" role="group" aria-label="Locuri lunare">
+          <div className="nav-group nav-sites" role="group" aria-label="Locuri lunare">
             <p className="k">Locuri de aterizare</p>
             {LANDING_SITES.map(({ id, name }) => (
               <button

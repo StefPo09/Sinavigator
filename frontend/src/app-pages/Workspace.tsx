@@ -18,6 +18,11 @@ import type { Marker, Perspective, WS } from '@/components/shared/types';
 import { LANDING_SITES } from '@/lib/data/landingSites';
 import { detectQuality, QUALITY_TEXT, type Quality } from '@/components/shared/quality';
 import { Brand, WorkspaceNavigation } from '@/components/shared/WorkspaceNavigation';
+import { Mission } from '@/components/lesson/Mission';
+import { Quiz } from '@/components/quiz/Quiz';
+import { Tour } from '@/components/tour/Tour';
+import { preloadAll, type PreloadStatus } from '@/components/shared/preload';
+import { Comparison } from '@/components/zone/Comparison';
 
 const H = 3_600_000;
 
@@ -125,7 +130,25 @@ function Workspace({ bundle, origin, reason, warnings }: { bundle: Bundle; origi
     LANDING_SITES.find((l) => matchesSite(requestedSite, l.id, l.name))?.id ?? null,
   );
   const [quality, setQuality] = useState<Quality>(detectQuality);
+  const [workspaceMode, setWorkspaceMode] = useState<'student' | 'planner'>('student');
+  const [showQuiz, setShowQuiz] = useState(false);
+  const [showTour, setShowTour] = useState(false);
+  const [preparing, setPreparing] = useState(false);
+  const [preloadStatus, setPreloadStatus] = useState<PreloadStatus | null>(null);
   const mainRef = useRef<HTMLDivElement>(null);
+  const missionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('tour') === '0') return;
+    const timer = window.setTimeout(() => {
+      try {
+        if (!window.localStorage.getItem('sinavigator-tour-v1')) setShowTour(true);
+      } catch {
+        setNote('Tutorialul automat nu a putut fi memorat în acest browser. Îl poți porni oricând din bara de instrumente.');
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const analyses = useMemo(() => new Map(bundle.scenarios.map((s) => [s.id, analyse(s, profileOf(s.siteId), model, bundle.rules)])), [bundle, model, profileOf]);
 
@@ -259,6 +282,32 @@ function Workspace({ bundle, origin, reason, warnings }: { bundle: Bundle; origi
     setNote('Dovezile au fost exportate ca JSON.');
   };
 
+  const showMission = () => {
+    setWorkspaceMode('student');
+    window.requestAnimationFrame(() => missionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  };
+
+  const markTourSeen = () => {
+    try {
+      window.localStorage.setItem('sinavigator-tour-v1', '1');
+    } catch {
+      setNote('Nu s-a putut salva starea tutorialului în acest browser.');
+    }
+  };
+
+  const preparePresentation = async () => {
+    setPreparing(true);
+    setPreloadStatus(null);
+    try {
+      const { failed } = await preloadAll(LANDING_SITES.map((site) => site.id), quality, setPreloadStatus);
+      setNote(failed.length ? `Unele elemente nu s-au putut pregăti: ${failed.join(', ')}.` : 'Activele pentru prezentare sunt pregătite.');
+    } catch (error) {
+      setNote(`Pregătirea activelor a eșuat: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setPreparing(false);
+    }
+  };
+
   /* ── navigare cinematică: zbor de cameră în scena curentă, apoi trecere scurtă spre scena următoare ── */
   const [prevStage, setPrevStage] = useState<Perspective | null>(null);
   const [flight, setFlight] = useState<null | 'moon' | 'site'>(null);
@@ -356,6 +405,7 @@ function Workspace({ bundle, origin, reason, warnings }: { bundle: Bundle; origi
     setQuality,
     note,
     setNote,
+    showMission,
     go,
     stage: perspective,
     prevStage,
@@ -403,6 +453,21 @@ function Workspace({ bundle, origin, reason, warnings }: { bundle: Bundle; origi
             <button type="button" className="btn sm" onClick={exportJson} disabled={!sides.length}>
               Export
             </button>
+            <div className="atlas-tools" role="group" aria-label="Instrumente de învățare">
+              <div className="seg" role="group" aria-label="Mod de lucru">
+                <button type="button" className={`chip${workspaceMode === 'student' ? ' on' : ''}`} aria-pressed={workspaceMode === 'student'} onClick={() => setWorkspaceMode('student')}>
+                  Elev
+                </button>
+                <button type="button" className={`chip${workspaceMode === 'planner' ? ' on' : ''}`} aria-pressed={workspaceMode === 'planner'} onClick={() => setWorkspaceMode('planner')}>
+                  Planificator
+                </button>
+              </div>
+              <button type="button" className="btn sm" onClick={() => setShowQuiz(true)}>Quiz lunar</button>
+              <button type="button" className="btn sm" onClick={() => setShowTour(true)}>Tutorial</button>
+              <button type="button" className="btn sm" onClick={preparePresentation} disabled={preparing}>
+                {preparing ? 'Se pregătesc…' : 'Pregătește prezentarea'}
+              </button>
+            </div>
           </div>
         </header>
         <main id="perspectiva" ref={mainRef} tabIndex={-1} className="workspace-main">
@@ -413,8 +478,32 @@ function Workspace({ bundle, origin, reason, warnings }: { bundle: Bundle; origi
             {perspective === 'suprafata' && <SuprafataView ws={ws} />}
           </div>
         </main>
+        {preparing && preloadStatus && (
+          <p className="preload-status" role="status" aria-live="polite">
+            {preloadStatus.label} · {preloadStatus.done}/{preloadStatus.total}
+            {preloadStatus.moonPct != null && ` · ${preloadStatus.moonPct}%`}
+          </p>
+        )}
+        <div ref={missionRef} className="learning-content">
+          {workspaceMode === 'student' ? <Mission ws={ws} /> : <section className="planner-inline" aria-labelledby="planner-title"><h2 id="planner-title">Planificator · comparație detaliată</h2><Comparison ws={ws} /></section>}
+        </div>
       </div>
 
+      {showTour && (
+        <Tour
+          ws={ws}
+          onSkip={() => {
+            setShowTour(false);
+            markTourSeen();
+          }}
+          onFinish={() => {
+            setShowTour(false);
+            markTourSeen();
+            setShowQuiz(true);
+          }}
+        />
+      )}
+      {showQuiz && <Quiz bundle={bundle} activityMin={activityMin} onClose={() => setShowQuiz(false)} />}
       <div className={`fader${fading ? ' on' : ''}`} aria-hidden="true" />
       <p className="note" role="status" aria-live="polite">
         {note}

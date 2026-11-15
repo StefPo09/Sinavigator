@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { moonGeocentric, sunGeocentric } from '@/lib/logic/ephemeris.ts';
-import { nextLunarTransfer, transferFrame } from '@/lib/logic/lunarTransfer.ts';
+import { moonGeocentric, sunGeocentric } from '../src/lib/logic/ephemeris.ts';
+import { nextLunarTransfer, transferFrame } from '../src/lib/logic/lunarTransfer.ts';
 
 const DAY = 86_400_000;
 const started = Date.UTC(2026, 10, 14);

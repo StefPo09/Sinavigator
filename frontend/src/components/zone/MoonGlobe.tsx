@@ -9,41 +9,12 @@ import type { Direction3 } from '@/lib/logic/bundleEphemeris';
 import type { Quality } from '../shared/quality';
 import { starBackground, tex, TEX } from '../shared/bodies';
 import { animate, disposeScene, easeOutCubic, latLonMapping, prefersReducedMotion } from '../shared/three-utils';
+import { loadMoonModel, moonLoadPct, MOON_MODEL_URL, progressListeners } from '../shared/moonModel';
 
 /** Starea modelului 3D al Lunii (GLB din public/3d-models). */
 export type MoonModelState = { state: 'loading'; pct: number | null } | { state: 'loaded' } | { state: 'missing' } | { state: 'error' } | { state: 'skipped' };
 
-/** Modelul NASA LRO (culoare 8k + topografie) exportat din Blender; ~78 MB (2 M vârfuri). */
-export const MOON_MODEL_URL = '/3d-models/moon.glb';
-/** Raza medie a sferei din GLB (măsurată); modelul se scalează la raza 1. */
-const MODEL_MEAN_RADIUS = 0.983;
-
-// Modelul se încarcă o singură dată pe sesiune și se refolosește la revenirea în perspectivă.
-let moonModel: Promise<THREE.Object3D | null> | null = null;
-const progressListeners = new Set<(pct: number | null) => void>();
-function loadMoonModel(): Promise<THREE.Object3D | null> {
-  moonModel ??= (async () => {
-    const head = await fetch(MOON_MODEL_URL, { method: 'HEAD' }).catch(() => null);
-    if (!head || !head.ok) return null;
-    const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js');
-    const gltf = await new GLTFLoader().loadAsync(MOON_MODEL_URL, (e) => {
-      const pct = e.lengthComputable && e.total ? Math.round((e.loaded / e.total) * 100) : null;
-      for (const f of progressListeners) f(pct);
-    });
-    const root = gltf.scene;
-    root.traverse((o) => {
-      const m = o as THREE.Mesh;
-      if (m.isMesh) latLonMapping(m.material as THREE.MeshStandardMaterial, false);
-    });
-    root.scale.setScalar(1 / MODEL_MEAN_RADIUS);
-    root.updateMatrixWorld(true);
-    return root;
-  })().catch((e) => {
-    moonModel = null;
-    throw e;
-  });
-  return moonModel;
-}
+export { MOON_MODEL_URL };
 
 /** Raza reliefului (în unitățile scenei) în direcția dată: vârful modelului cel mai apropiat ca direcție. */
 function terrainRadii(root: THREE.Object3D, dirs: THREE.Vector3[]): number[] {
@@ -194,6 +165,7 @@ export default function MoonGlobe({ onFail, onModel, landing, landingId, sunDire
     let model: THREE.Object3D | null = null;
     const onProgress = (pct: number | null) => modelRef.current({ state: 'loading', pct });
     progressListeners.add(onProgress);
+    if (moonLoadPct() != null) onProgress(moonLoadPct());
     modelRef.current(quality === 'low' ? { state: 'skipped' } : { state: 'loading', pct: null });
     (quality === 'low' ? Promise.resolve(null) : loadMoonModel())
       .then((root) => {
