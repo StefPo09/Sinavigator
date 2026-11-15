@@ -53,8 +53,8 @@ export function validateBundle(raw: unknown): ValidationReport {
         if (!finite(v) || Math.abs(v) > 90) return err(`Profile "${p.siteId}": terrain angles must be numbers within ±90° or null.`);
         known++;
       }
-      if (known === 0) warnings.push(`Profilul „${p.siteId}” nu are valori de teren; rezultatele cu teren pentru această zonă sunt necunoscute.`);
-      else if (known < p.elevDeg.length) warnings.push(`Profilul „${p.siteId}” are ${p.elevDeg.length - known} sectoare azimutale fără date de teren (afișate ca necunoscute).`);
+      if (known === 0) warnings.push(`Profile "${p.siteId}" has no terrain values; terrain results for this site are unknown.`);
+      else if (known < p.elevDeg.length) warnings.push(`Profile "${p.siteId}" has ${p.elevDeg.length - known} azimuth sectors without terrain data (shown as unknown).`);
     });
 
   const ids = new Set<string>();
@@ -87,13 +87,13 @@ export function validateBundle(raw: unknown): ValidationReport {
         if (!ser.azDeg.every(finite)) err(`${tag}: ${body} azimuths must all be numbers.`);
         if (!ser.elDeg.every((v) => v === null || (finite(v) && Math.abs(v) <= 90))) err(`${tag}: ${body} elevations must be numbers within ±90° or null.`);
         const unknown = ser.elDeg.filter((v) => v === null).length;
-        if (unknown) warnings.push(`${tag}: lipsesc ${unknown} eșantioane pentru ${body === 'sun' ? 'Soare' : 'Pământ'} (afișate ca necunoscute).`);
+        if (unknown) warnings.push(`${tag}: ${unknown} ${body === 'sun' ? 'Sun' : 'Earth'} samples are missing (shown as unknown).`);
       }
     });
 
   if (Array.isArray(b.scenarios) && Array.isArray(b.profiles))
     for (const id of new Set(b.scenarios.filter(isObj).map((s) => s.siteId as string)))
-      if (siteIds.has(id) && !profiled.has(id)) warnings.push(`Zona „${id}” nu are profil de teren; este disponibil doar orizontul idealizat.`);
+      if (siteIds.has(id) && !profiled.has(id)) warnings.push(`Site "${id}" has no terrain profile; only the ideal horizon is available.`);
 
   return { errors, warnings };
 }

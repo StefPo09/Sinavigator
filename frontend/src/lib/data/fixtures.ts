@@ -24,13 +24,13 @@ const MODELS: SiteModel[] = [
   {
     site: {
       id: 'A',
-      name: 'Punct de studiu A (sintetic)',
-      short: 'Punct A',
+      name: 'Study point A (synthetic)',
+      short: 'Point A',
       latDeg: -89.45,
       lonDeg: 222.7,
-      frame: 'niciunul (sintetic)',
+      frame: 'none (synthetic)',
       observerHeightM: 2,
-      source: 'Coordonate fictive — vor fi înlocuite de un punct de studiu documentat',
+      source: 'Fictional coordinates — to be replaced by a documented study point',
     },
     seed: 26,
     base: 0.45,
@@ -41,13 +41,13 @@ const MODELS: SiteModel[] = [
   {
     site: {
       id: 'B',
-      name: 'Punct de studiu B (sintetic)',
-      short: 'Punct B',
+      name: 'Study point B (synthetic)',
+      short: 'Point B',
       latDeg: -88.8,
       lonDeg: 124.5,
-      frame: 'niciunul (sintetic)',
+      frame: 'none (synthetic)',
       observerHeightM: 2,
-      source: 'Coordonate fictive — vor fi înlocuite de un punct de studiu documentat',
+      source: 'Fictional coordinates — to be replaced by a documented study point',
     },
     seed: 11,
     base: 1.0,
@@ -100,7 +100,7 @@ function makeProfile(m: SiteModel): HorizonProfile {
     elevDeg,
     resolutionM: null,
     searchRadiusKm: null,
-    source: 'Profil sintetic (fixture) — nu provine din LOLA / produsul PGDA 90',
+    source: 'Synthetic profile (fixture) — not from LOLA / the PGDA 90 product',
   };
 }
 
@@ -132,13 +132,13 @@ export function buildFixtureBundle(): Bundle {
   return {
     provenance: 'fixture',
     generatedAt: new Date(T0).toISOString(),
-    note: 'Date demonstrative sintetice. Nu sunt rezultate SPICE sau DEM; nu descriu niciun loc lunar real.',
+    note: 'Synthetic demo data. Not SPICE or DEM results; they describe no real lunar place.',
     layers: {
-      geometry: { source: 'synthetic', description: 'Curbe periodice azimut–elevație pentru Soare/Pământ, generate în browser' },
-      terrain: { source: 'synthetic', description: 'Profiluri de orizont netede aleatorii, cu un sector intenționat fără date la Punctul B' },
+      geometry: { source: 'synthetic', description: 'Periodic azimuth–elevation curves for the Sun/Earth, generated in the browser' },
+      terrain: { source: 'synthetic', description: 'Smooth random horizon profiles, with an intentional no-data sector at Point B' },
     },
-    validation: { status: 'not-validated', summary: 'Datele sintetice nu pot fi validate față de referințe.' },
-    assumptions: ['Toate valorile sunt sintetice și există doar pentru demonstrarea interfeței.'],
+    validation: { status: 'not-validated', summary: 'Synthetic data cannot be validated against references.' },
+    assumptions: ['All values are synthetic and exist only to demonstrate the interface.'],
     rules: { sunMarginDeg: 0, earthMarginDeg: 2 },
     sites: MODELS.map((m) => m.site),
     profiles: MODELS.map(makeProfile),

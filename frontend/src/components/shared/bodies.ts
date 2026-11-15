@@ -38,7 +38,7 @@ export function groundTex(kind: 'diff' | 'normal', repeat = 1): THREE.Texture {
 }
 
 export const TEXTURE_CREDITS =
-  'Texturi Soare, Pământ, Lună și cer: Solar System Scope (CC BY 4.0), pe baza datelor NASA. Sol lunar și roci lunare scanate 3D: Poly Haven, colecția „Moon” (CC0), roci prelucrate în Blender. Globul lunar: model NASA LRO. Teren 3D Apollo 15 și 17: LROC NAC DTM și ortofoto NAC (NASA/GSFC/Arizona State University).';
+  'Sun, Earth, Moon and sky textures: Solar System Scope (CC BY 4.0), based on NASA data. Lunar ground and 3D-scanned lunar rocks: Poly Haven, “Moon” collection (CC0), rocks processed in Blender. Lunar globe: NASA LRO model. Apollo 15 and 17 3D terrain: LROC NAC DTM and NAC orthophotos (NASA/GSFC/Arizona State University).';
 
 const loader = new THREE.TextureLoader();
 const cache = new Map<string, THREE.Texture>();

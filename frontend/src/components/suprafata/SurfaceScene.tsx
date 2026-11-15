@@ -5,11 +5,14 @@ import * as THREE from 'three';
 import type {HorizonProfile} from '@/lib/data/types';
 import type {Model, VisState} from '@/lib/logic/derive';
 import {makeEarth, makeSun} from '../shared/bodies';
-import {disposeScene, prefersReducedMotion} from '../shared/three-utils';
+import {animate, disposeScene, prefersReducedMotion} from '../shared/three-utils';
 import type {Quality} from '../shared/quality';
 import type {SiteTerrain} from './siteTerrain';
 import {scatterRocks} from './rocks';
 import {buildGround, EYE, horizonRing} from './terrain';
+
+/** Privirea implicită ușor sub orizont: terenul ocupă partea de jos a cadrului, cerul nu domină. */
+export const DEFAULT_PITCH = -4;
 
 export interface SkyState {
   sunAz: number;
@@ -43,6 +46,8 @@ interface Props {
   /** teren real 3D (LROC NAC DTM, GLB) pentru locurile de aterizare; altfel teren procedural */
   real: SiteTerrain | null;
   quality: Quality;
+  /** sosire din perspectiva Lună: privirea pornește în jos, cu câmp îngust, și se ridică spre orizont */
+  intro?: boolean;
 }
 
 const RAD = Math.PI / 180;
@@ -58,7 +63,7 @@ export function dirFrom(azDeg: number, elDeg: number): THREE.Vector3 {
   return new THREE.Vector3(Math.sin(a) * Math.cos(e), Math.sin(e), -Math.cos(a) * Math.cos(e));
 }
 
-export default function SurfaceScene({ sky, profile, model, seed, modelUrl, onHeading, onFail, onModel, onReady, onFirstFrame, real, quality }: Props) {
+export default function SurfaceScene({ sky, profile, model, seed, modelUrl, onHeading, onFail, onModel, onReady, onFirstFrame, real, quality, intro = false }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const api = useRef<{ setSky: (s: SkyState) => void; lookAt: (az: number, el: number) => void; reset: () => void; enterVR: () => Promise<void> } | null>(null);
   const headingRef = useRef(onHeading);
@@ -97,7 +102,7 @@ export default function SurfaceScene({ sky, profile, model, seed, modelUrl, onHe
     renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.xr.enabled = true;
     renderer.domElement.tabIndex = 0;
-    renderer.domElement.setAttribute('aria-label', 'Vedere de pe suprafață. Săgețile rotesc privirea, + și − schimbă zoomul.');
+    renderer.domElement.setAttribute('aria-label', 'View from the surface. Arrow keys turn the view, + and − zoom.');
     el.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
@@ -164,7 +169,7 @@ export default function SurfaceScene({ sky, profile, model, seed, modelUrl, onHe
     scene.add(earth);
 
     let yaw = 0; // azimutul privirii, grade
-    let pitch = 8;
+    let pitch = DEFAULT_PITCH;
     let target: { yaw: number; pitch: number } | null = null;
     const applyView = () => {
       camera.lookAt(camera.position.clone().add(dirFrom(yaw, pitch)));
@@ -210,7 +215,7 @@ export default function SurfaceScene({ sky, profile, model, seed, modelUrl, onHe
     const reset = () => {
       camera.fov = 60;
       camera.updateProjectionMatrix();
-      lookAt(0, 8);
+      lookAt(0, DEFAULT_PITCH);
     };
     const enterVR = async () => {
       const xr = (navigator as Navigator & { xr?: { requestSession: (m: string, o: object) => Promise<XRSession> } }).xr;
@@ -221,6 +226,45 @@ export default function SurfaceScene({ sky, profile, model, seed, modelUrl, onHe
     api.current = { setSky, lookAt, reset, enterVR };
     setSky(sky);
     applyView();
+    // continuarea coborârii de pe glob: camera privește solul cu câmp îngust și se ridică spre orizont
+    let stopIntro: (() => void) | undefined;
+    if (intro) {
+      // ultima parte a coborârii: de la ~600 m deasupra sitului până la înălțimea ochilor (1,7 m),
+      // cu privirea care pornește spre sol și se ridică spre orizont; decelerare ca la aterizare
+      const groundY = camera.position.y;
+      const ALT = real ? 600 : 40;
+      const p0 = -34;
+      const f0 = 48;
+      const yaw0 = yaw - 32;
+      const yaw1 = yaw;
+      camera.position.y = groundY + ALT;
+      pitch = p0;
+      yaw = yaw0;
+      camera.fov = f0;
+      camera.updateProjectionMatrix();
+      applyView();
+      const smooth = (x: number) => {
+        const t = Math.min(1, Math.max(0, x));
+        return t * t * (3 - 2 * t);
+      };
+      stopIntro = animate(
+        3200,
+        (k) => {
+          const d = 1 - (1 - k) * (1 - k);
+          camera.position.y = groundY + ALT * (1 - d);
+          pitch = p0 + (DEFAULT_PITCH - p0) * smooth(k * 1.15);
+          yaw = yaw0 + (yaw1 - yaw0) * smooth(k);
+          camera.fov = f0 + (60 - f0) * smooth(k);
+          camera.updateProjectionMatrix();
+          applyView();
+        },
+        () => {
+          camera.position.y = groundY;
+          applyView();
+        },
+        (t) => t,
+      );
+    }
 
     // model GLB opțional (exportat din Blender în public/3d-models)
     let cancelled = false;
@@ -250,6 +294,7 @@ export default function SurfaceScene({ sky, profile, model, seed, modelUrl, onHe
     const onDown = (e: PointerEvent) => {
       drag = { x: e.clientX, y: e.clientY, yaw, pitch };
       target = null;
+      stopIntro?.();
       cv.setPointerCapture(e.pointerId);
     };
     const onMove = (e: PointerEvent) => {
@@ -315,6 +360,7 @@ export default function SurfaceScene({ sky, profile, model, seed, modelUrl, onHe
     });
 
     return () => {
+      stopIntro?.();
       cancelled = true;
       renderer.setAnimationLoop(null);
       ro.disconnect();

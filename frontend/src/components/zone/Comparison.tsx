@@ -8,12 +8,12 @@ import type { ElRange } from '../shared/SkyPanorama';
 import type { WS } from '../shared/types';
 import { CauseSummary } from './CauseSummary';
 import { DecisionSummary } from './DecisionSummary';
-import { IntervalTable, MethodsSources } from './EvidenceDetails';
+import { IntervalTable } from './EvidenceDetails';
 import { PlanAControls, PlanBControls, ScenarioEvidence, ScenarioFrame, Unavailable, type Side } from './ScenarioCards';
 import { SharedTimeline } from './SharedTimeline';
 import { TimeChart } from './TimeChart';
 
-export const ACTIVITIES = [30, 60, 120, 240];
+import { ACTIVITIES } from '../lesson/Mission';
 
 /** Comparația Plan A / Alternativa B (logica existentă), legată de timpul global. */
 export function Comparison({ ws }: { ws: WS }) {
@@ -56,27 +56,27 @@ export function Comparison({ ws }: { ws: WS }) {
     const s = sides.find((d) => d.id === id);
     return marker && marker.side === id && marker.body && s && t === seekTime(s.an, marker.t) ? marker.body : null;
   };
-  const syncLabel = !B ? 'Un singur scenariu' : ws.change?.date ? 'Același timp scurs · date UTC diferite' : 'Același moment UTC pentru ambele scenarii';
-  const trustLabel = ws.trust === 'validated' ? 'Calculat · validat' : ws.bundle.validation?.status === 'partial' ? 'Calculat · validat parțial' : 'Calculat · nevalidat';
-  const primaryName = ws.cat.sites.find((site) => site.id === ws.selA.siteId)?.short ?? 'Situl de referință';
-  const alternativeName = ws.cat.sites.find((site) => site.id === ws.selB?.siteId)?.short ?? 'Situl alternativ';
+  const syncLabel = !B ? 'One option' : ws.change?.date ? 'Same elapsed time · different UTC dates' : 'Same UTC moment for both options';
+  const trustLabel = ws.trust === 'validated' ? 'Computed · validated' : ws.bundle.validation?.status === 'partial' ? 'Computed · partly validated' : 'Computed · not validated';
+  const primaryName = ws.cat.sites.find((site) => site.id === ws.selA.siteId)?.short ?? 'Reference site';
+  const alternativeName = ws.cat.sites.find((site) => site.id === ws.selB?.siteId)?.short ?? 'Alternative site';
 
   const evidence = (s: Side | null, missing: string) =>
     s ? <ScenarioEvidence side={s} model={model} cursor={t} range={range} highlight={highlight(s.id)} /> : <Unavailable>{missing}</Unavailable>;
 
   return (
     <div className="comparison">
-      <section className="card global" aria-label="Activitate și model de orizont">
-        <ChipGroup label="Durata activității" value={ws.activityMin} options={ACTIVITIES.map((m) => ({ value: m, label: fmtDur(m) }))} onChange={ws.setActivityMin} />
+      <section className="card global" aria-label="Activity and horizon model">
+        <ChipGroup label="Activity duration" value={ws.activityMin} options={ACTIVITIES.map((m) => ({ value: m, label: fmtDur(m) }))} onChange={ws.setActivityMin} />
         <ChipGroup
-          label="Modelul orizontului"
+          label="Horizon model"
           value={model}
           options={[
-            { value: 'ideal', label: 'Idealizat 0°' },
+            { value: 'ideal', label: 'Ideal 0°' },
             {
               value: 'terrain',
-              label: ws.terrainSynthetic ? 'Teren (simulat)' : 'Teren',
-              reason: ws.noTerrain.length ? `fără profil de teren pentru ${ws.noTerrain.map((s) => s.short).join(', ')}` : undefined,
+              label: ws.terrainSynthetic ? 'Terrain (simulated)' : 'Terrain',
+              reason: ws.noTerrain.length ? `no terrain profile for ${ws.noTerrain.map((s) => s.short).join(', ')}` : undefined,
             },
           ]}
           onChange={ws.setModel}
@@ -84,16 +84,16 @@ export function Comparison({ ws }: { ws: WS }) {
         <p className="model-note">
           {model === 'ideal' ? (
             <>
-              <b>Orizont idealizat:</b> terenul local nu este modelat; corpurile sunt comparate cu planul de 0°.
+              <b>Ideal horizon:</b> local terrain is not modelled; the bodies are compared with the 0° plane.
             </>
           ) : ws.terrainSynthetic ? (
             <>
-              <b>Teren simulat:</b> profilurile de orizont sunt sintetice, nu provin dintr-un DEM.
+              <b>Simulated terrain:</b> the horizon profiles are synthetic, not from a DEM.
             </>
           ) : (
             <>
-              <b>Teren:</b> profiluri de orizont din datele încărcate ({ws.bundle.layers?.terrain?.product ?? 'produs nedeclarat'}).
-              {ws.bundle.layers?.terrain?.product === 'LRO/LROC NAC DTM' && ' Pentru setul Apollo, profilurile acoperă relieful dintr-o rază de 5 km în jurul fiecărui modul lunar.'}
+              <b>Terrain:</b> horizon profiles from the loaded data ({ws.bundle.layers?.terrain?.product ?? 'product not declared'}).
+              {ws.bundle.layers?.terrain?.product === 'LRO/LROC NAC DTM' && ' For the Apollo set, the profiles cover the relief within 5 km of each lunar module.'}
             </>
           )}
         </p>
@@ -102,15 +102,15 @@ export function Comparison({ ws }: { ws: WS }) {
       <div className="compare">
         <ScenarioFrame id="A" title={primaryName}>
           <PlanAControls cat={ws.cat} sel={ws.selA} onChange={ws.changeA} />
-          {evidence(A, `Alege un start disponibil pentru ${primaryName} ca să vezi orizontul.`)}
+          {evidence(A, `Choose an available start for ${primaryName} to see the horizon.`)}
         </ScenarioFrame>
         <ScenarioFrame id="B" title={alternativeName}>
           {single ? (
-            <Unavailable>Comparație indisponibilă: datele încărcate conțin un singur scenariu.</Unavailable>
+            <Unavailable>Comparison unavailable: the loaded data has only one scenario.</Unavailable>
           ) : (
             <>
               <PlanBControls cat={ws.cat} a={ws.selA} sel={ws.selB ?? { siteId: ws.selA.siteId, startMs: null }} onChange={ws.changeB} />
-              {evidence(B, 'Alege o întârziere sau o zonă disponibilă pentru scenariul alternativ.')}
+              {evidence(B, 'Choose an available delay or site for the alternative.')}
             </>
           )}
         </ScenarioFrame>
@@ -135,8 +135,8 @@ export function Comparison({ ws }: { ws: WS }) {
           />
           {outOfA && A && (
             <p className="unavail">
-              Momentul global ({fmtUtcMs(ws.timeMs)}) este în afara scenariului pentru {A.site.short} ({fmtUtcMs(A.t0)} → {fmtUtcMs(A.t0 + A.an.totalMin * 60_000)}). Comparația arată începutul scenariului; mută
-              timeline-ul de mai jos pentru a reveni în interval.
+              The analysed moment ({fmtUtcMs(ws.timeMs)}) is outside the period for {A.site.short} ({fmtUtcMs(A.t0)} → {fmtUtcMs(A.t0 + A.an.totalMin * 60_000)}). The comparison shows the start of the period; move
+              the timeline below to get back inside it.
             </p>
           )}
           <SharedTimeline
@@ -155,14 +155,14 @@ export function Comparison({ ws }: { ws: WS }) {
           />
           <section className="card charts" aria-labelledby="charts-h">
             <header className="sec-h">
-              <h2 id="charts-h">Elevația în timp</h2>
-              <span className="muted small">Aceeași scară pentru ambele grafice · liniile punctate: terenul în direcția fiecărui corp (Pământ: + δ) · clic sau trage pentru a muta momentul comun</span>
+              <h2 id="charts-h">Elevation over time</h2>
+              <span className="muted small">Same scale for both charts · dotted lines: terrain in each body’s direction (Earth: + δ) · click or drag to move the shared moment</span>
             </header>
             <div className="chart-grid">
               {sides.map((s) => (
                 <div key={s.id} className="chart-col">
                   <p className="chart-h">
-                    <Tag id={s.id} label={s.site.short} small /> · din {fmtUtcMs(s.t0)}
+                    <Tag id={s.id} label={s.site.short} small /> · from {fmtUtcMs(s.t0)}
                   </p>
                   <TimeChart
                     a={s.an}
@@ -174,7 +174,7 @@ export function Comparison({ ws }: { ws: WS }) {
                     range={range}
                     marker={marker?.side === s.id ? marker.t : null}
                     onSeek={ws.seekElapsed}
-                    label={`Elevația Soarelui și a Pământului la ${s.site.short}, pe ${fmtDur(total)}. Pentru tastatură folosește timeline-ul comun sau tabelul intervalelor.`}
+                    label={`Sun and Earth elevation at ${s.site.short}, over ${fmtDur(total)}. With a keyboard, use the shared timeline or the interval table.`}
                   />
                 </div>
               ))}
@@ -184,9 +184,8 @@ export function Comparison({ ws }: { ws: WS }) {
           <IntervalTable sides={sides} />
         </>
       ) : (
-        <Unavailable>Alege un scenariu disponibil pentru a vedea rezultatele.</Unavailable>
+        <Unavailable>Choose an available option to see the results.</Unavailable>
       )}
-      <MethodsSources bundle={ws.bundle} origin={ws.origin} reason={ws.reason} warnings={ws.warnings} sides={sides} />
     </div>
   );
 }

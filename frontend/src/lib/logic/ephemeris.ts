@@ -4,7 +4,7 @@
 // orientarea vizuală a scenei. Eroare tipică: sub ~0,5° în longitudine.
 
 export const EPHEMERIS_LABEL =
-  'Poziții din formule analitice simplificate (precizie ≈ 0,5°), calculate în browser — nu sunt rezultate SPICE/NASA și nu intră în calculul ferestrelor.';
+  'Positions from simplified analytic formulas (≈ 0.5° precision), computed in the browser — not SPICE/NASA results and not used for the visibility windows.';
 
 const RAD = Math.PI / 180;
 const J2000_MS = Date.UTC(2000, 0, 1, 12, 0, 0);
@@ -58,7 +58,7 @@ export function moonPhase(ms: number): { elongDeg: number; illuminated: number }
 }
 
 export const LOCAL_SKY_LABEL =
-  'Poziții aproximative pentru explorarea suprafeței (model analitic simplificat, fără librație). Comparația folosește seriile separate din fișierul de date.';
+  'Approximate positions for exploring the surface (simplified analytic model, no libration). The comparison uses the separate series from the data file.';
 
 /**
  * Cerul local aproximativ pentru un punct de pe Lună (lat/lon selenografice, grade).

@@ -11,11 +11,11 @@ const ROW_H = 18;
 const ROW_GAP = 5;
 const PAD = { l: 58, r: 10, t: 8 };
 const ROWS: { key: RowKey; label: string }[] = [
-  { key: 'sun', label: 'Soare' },
-  { key: 'earth', label: 'Pământ' },
+  { key: 'sun', label: 'Sun' },
+  { key: 'earth', label: 'Earth' },
   { key: 'both', label: 'Ambele' },
 ];
-const STATE_WORD = { vis: 'vizibil', hid: 'ascuns', unk: 'necunoscut' };
+const STATE_WORD = { vis: 'visible', hid: 'hidden', unk: 'unknown' };
 
 interface Props {
   a: Analysis;
@@ -78,7 +78,7 @@ export function TimeChart({ a, startUtc, model, cursor, total, activityMin, rang
     const fits = row === 'both' && s.state === 'vis' && s.end - s.start >= activityMin;
     return (
       <g key={row + i}>
-        <title>{`${ROWS.find((r) => r.key === row)!.label}: ${STATE_WORD[s.state]} · ${fmtUtc(startUtc, s.start)} → ${fmtUtc(startUtc, s.end)} · ${fmtDur(s.end - s.start)}${s.truncStart || s.truncEnd ? ' · trunchiat de perioada analizată' : ''}`}</title>
+        <title>{`${ROWS.find((r) => r.key === row)!.label}: ${STATE_WORD[s.state]} · ${fmtUtc(startUtc, s.start)} → ${fmtUtc(startUtc, s.end)} · ${fmtDur(s.end - s.start)}${s.truncStart || s.truncEnd ? ' · cut by the analysed period' : ''}`}</title>
         <rect x={x0 + 0.5} y={top} width={Math.max(1, sw - 1)} height={ROW_H} rx={3} className={`sg sg-${row} sg-${s.state}${fits ? ' fits' : ''}`} fill={s.state === 'unk' ? `url(#unk${uid})` : undefined} />
         {sw > 64 && s.state !== 'hid' && (
           <text x={x0 + sw / 2} y={top + ROW_H / 2 + 3.5} textAnchor="middle" className={`sg-text st-${s.state}`}>
@@ -171,10 +171,10 @@ export function TimeChart({ a, startUtc, model, cursor, total, activityMin, rang
           <g transform={`translate(${Math.min(PAD.l + pw - 104, Math.max(PAD.l + 2, cx + 8))} ${PAD.t + 4})`}>
             <rect width="102" height="34" rx="5" className="tip" />
             <text x="7" y="14" className="tip-t t-sun">
-              Soare {fmtDeg(a.sun.el[idx], 2)}
+              Sun {fmtDeg(a.sun.el[idx], 2)}
             </text>
             <text x="7" y="28" className="tip-t t-earth">
-              Pământ {fmtDeg(a.earth.el[idx], 2)}
+              Earth {fmtDeg(a.earth.el[idx], 2)}
             </text>
           </g>
         </g>

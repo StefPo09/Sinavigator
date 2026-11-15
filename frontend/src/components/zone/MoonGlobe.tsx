@@ -9,12 +9,10 @@ import type { Direction3 } from '@/lib/logic/bundleEphemeris';
 import type { Quality } from '../shared/quality';
 import { starBackground, tex, TEX } from '../shared/bodies';
 import { animate, disposeScene, easeOutCubic, latLonMapping, prefersReducedMotion } from '../shared/three-utils';
-import { loadMoonModel, moonLoadPct, MOON_MODEL_URL, progressListeners } from '../shared/moonModel';
+import { loadMoonModel, moonLoadPct, progressListeners } from '../shared/moonModel';
 
 /** Starea modelului 3D al Lunii (GLB din public/3d-models). */
 export type MoonModelState = { state: 'loading'; pct: number | null } | { state: 'loaded' } | { state: 'missing' } | { state: 'error' } | { state: 'skipped' };
-
-export { MOON_MODEL_URL };
 
 /** Raza reliefului (în unitățile scenei) în direcția dată: vârful modelului cel mai apropiat ca direcție. */
 function terrainRadii(root: THREE.Object3D, dirs: THREE.Vector3[]): number[] {
@@ -107,7 +105,9 @@ export default function MoonGlobe({ onFail, onModel, landing, landingId, sunDire
     const scene = new THREE.Scene();
     scene.background = starBackground();
     scene.backgroundIntensity = 0.3;
-    const camera = new THREE.PerspectiveCamera(40, 1, 0.01, 200);
+    const camera = new THREE.PerspectiveCamera(40, 1, 0.005, 200);
+    // pe ecrane înguste (portret) păstrăm același câmp vizual pe orizontală, ca globul să încapă
+    const baseFov = () => (camera.aspect < 1 ? (2 * Math.atan(Math.tan(20 * RAD) / camera.aspect)) / RAD : 40);
     camera.position.copy(NEAR_SIDE);
     const controls = new OrbitControls(camera, labels.domElement);
     controls.enableDamping = !prefersReducedMotion();
@@ -121,6 +121,8 @@ export default function MoonGlobe({ onFail, onModel, landing, landingId, sunDire
     moonMat.map!.userData.shared = false;
     latLonMapping(moonMat, true);
     const moon = new THREE.Mesh(new THREE.SphereGeometry(1, 128, 96), moonMat);
+    // se afișează doar modelul LRO detaliat; sfera rămâne invizibilă (selecție prin clic) și apare doar dacă modelul lipsește
+    moonMat.visible = false;
     scene.add(moon);
     const ambient = new THREE.AmbientLight(0xffffff, sunDirection ? 0.2 : 0.75);
     scene.add(ambient);
@@ -137,15 +139,16 @@ export default function MoonGlobe({ onFail, onModel, landing, landingId, sunDire
     const markers = new Map<string, Marker>();
     for (const site of landing) {
       const n = surface(site.latDeg, site.lonDeg);
-      const dot = new THREE.Mesh(new THREE.SphereGeometry(0.009, 16, 8), new THREE.MeshBasicMaterial({ color: 0x79bfff }));
+      const dot = new THREE.Mesh(new THREE.SphereGeometry(0.0065, 16, 8), new THREE.MeshBasicMaterial({ color: 0xeef1ec }));
       dot.position.copy(n.clone().multiplyScalar(1.004));
-      const ring = new THREE.Mesh(new THREE.RingGeometry(0.014, 0.0165, 48), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.9 }));
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.0115, 0.0128, 64), new THREE.MeshBasicMaterial({ color: 0xd8f479, side: THREE.DoubleSide, transparent: true, opacity: 0.95 }));
       ring.position.copy(n.clone().multiplyScalar(1.005));
       ring.lookAt(n.clone().multiplyScalar(2));
       ring.visible = false;
+      const right = Math.abs(site.lonDeg) >= 15;
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 's3-label lb-landing';
+      b.className = `globe-label ${right ? 'side-r' : 'side-l'}`;
       b.textContent = site.name;
       b.tabIndex = -1; // comenzile echivalente din bara laterală și panou sunt accesibile din tastatură
       b.addEventListener('pointerdown', (event) => event.stopPropagation());
@@ -153,74 +156,125 @@ export default function MoonGlobe({ onFail, onModel, landing, landingId, sunDire
         if (controls.enabled) landingRef.current(site.id);
       });
       const label = new CSS2DObject(b);
-      label.center.set(Math.abs(site.lonDeg) < 15 ? 1.12 : -0.12, 0.5);
-      label.position.copy(n.clone().multiplyScalar(1.03));
+      label.center.set(right ? 0 : 1, 0.5);
+      label.position.copy(n.clone().multiplyScalar(1.006));
       scene.add(dot, ring, label);
       markers.set(site.id, { dot, ring, label, normal: n });
     }
-    let selected = landingId;
 
-    // modelul GLB real înlocuiește sfera ilustrativă când e disponibil; sfera rămâne invizibilă pentru selectarea prin clic
-    let disposed = false;
+    // modelul LRO detaliat (GLB) se încarcă la intrare; markerele apar după ce stau pe relieful lui
     let model: THREE.Object3D | null = null;
-    const onProgress = (pct: number | null) => modelRef.current({ state: 'loading', pct });
+    let ready = false;
+    let disposed = false;
+    const onProgress = (pct: number | null) => !disposed && modelRef.current({ state: 'loading', pct });
     progressListeners.add(onProgress);
-    if (moonLoadPct() != null) onProgress(moonLoadPct());
-    modelRef.current(quality === 'low' ? { state: 'skipped' } : { state: 'loading', pct: null });
-    (quality === 'low' ? Promise.resolve(null) : loadMoonModel())
+    modelRef.current({ state: 'loading', pct: moonLoadPct() });
+    const showFallback = (state: 'missing' | 'error') => {
+      moonMat.visible = true;
+      ready = true;
+      modelRef.current({ state });
+    };
+    loadMoonModel()
       .then((root) => {
         if (disposed) return;
-        if (!root) return quality === 'low' ? undefined : modelRef.current({ state: 'missing' });
+        if (!root) return showFallback('missing');
         model = root;
         scene.add(root);
-        (moon.material as THREE.MeshStandardMaterial).visible = false;
-        // punctele stau pe relieful modelului, nu pe sfera de rază 1
         const list = [...markers.values()];
         const radii = terrainRadii(root, list.map((m) => m.normal));
         list.forEach((m, i) => {
-          m.dot.position.copy(m.normal.clone().multiplyScalar(radii[i] + 0.004));
-          m.ring.position.copy(m.normal.clone().multiplyScalar(radii[i] + 0.005));
-          m.label.position.copy(m.normal.clone().multiplyScalar(radii[i] + 0.03));
+          m.dot.position.copy(m.normal.clone().multiplyScalar(radii[i] + 0.002));
+          m.ring.position.copy(m.normal.clone().multiplyScalar(radii[i] + 0.0025));
+          m.label.position.copy(m.normal.clone().multiplyScalar(radii[i] + 0.003));
         });
+        ready = true;
         modelRef.current({ state: 'loaded' });
       })
-      .catch(() => !disposed && modelRef.current({ state: 'error' }));
+      .catch(() => !disposed && showFallback('error'));
 
+    let selected: string | null = null;
     const select = (key: string | null) => {
       selected = key;
-      for (const [k, m] of markers) {
-        const on = k === key;
-        m.ring.visible = on;
-        m.dot.scale.setScalar(on ? 1.35 : 1);
-        m.label.element.classList.toggle('on', on);
-      }
+      for (const [k, m] of markers) m.label.element.classList.toggle('on', k === key);
     };
-    // drum de cameră între două puncte în jurul globului: direcția se rotește pe arc, distanța se interpolează
+    // ── zboruri de cameră ──
     let stopFlight: (() => void) | undefined;
-    const flyPath = (from: THREE.Vector3, to: THREE.Vector3, ms: number, done?: () => void, ease?: (t: number) => number) => {
+    const smooth = (x: number) => {
+      const t = Math.min(1, Math.max(0, x));
+      return t * t * (3 - 2 * t);
+    };
+    const linear = (t: number) => t;
+    /** Așezare din tablou: Luna umple deja cadrul; camera se rotește ușor spre fața vizibilă și se stabilizează. */
+    const settle = (ms: number) => {
       stopFlight?.();
-      const d0 = from.length();
-      const d1 = to.length();
-      const q0 = new THREE.Quaternion();
-      const q1 = new THREE.Quaternion().setFromUnitVectors(from.clone().normalize(), to.clone().normalize());
-      const q = new THREE.Quaternion();
-      const base = from.clone().normalize();
       controls.enabled = false;
-      stopFlight = animate(ms, (k) => {
-        q.slerpQuaternions(q0, q1, Math.min(1, k * 1.15));
-        camera.position.copy(base).applyQuaternion(q).multiplyScalar(d0 + (d1 - d0) * k);
+      const from = NEAR_SIDE.clone().multiplyScalar(1.22).applyAxisAngle(new THREE.Vector3(0, 1, 0), -0.42);
+      const q1 = new THREE.Quaternion().setFromUnitVectors(from.clone().normalize(), NEAR_SIDE.clone().normalize());
+      const q = new THREE.Quaternion();
+      const id = new THREE.Quaternion();
+      const base = from.clone().normalize();
+      const d0 = from.length();
+      const d1 = NEAR_SIDE.length();
+      stopFlight = animate(ms, (t) => {
+        q.slerpQuaternions(id, q1, t);
+        camera.position.copy(base).applyQuaternion(q).multiplyScalar(d0 + (d1 - d0) * t);
+        camera.up.set(0, 1, 0).applyAxisAngle(camera.position.clone().normalize(), -0.06 * (1 - t));
         camera.lookAt(0, 0, 0);
       }, () => {
+        camera.up.set(0, 1, 0);
         controls.enabled = true;
-        done?.();
-      }, ease);
+      }, easeOutCubic);
     };
-    const fly = (lat: number, lon: number, done: () => void) => flyPath(camera.position.clone(), surface(lat, lon, 1.03), 2000, done);
+    /**
+     * Coborâre spre un loc: (1) arc pe deasupra globului până deasupra sitului, (2) apropiere razantă,
+     * (3) privirea se ridică de la centrul Lunii spre orizontul curbat din față. Inversată = întoarcerea.
+     */
+    const descend = (n: THREE.Vector3, reverse: boolean, ms: number, done?: () => void) => {
+      stopFlight?.();
+      controls.enabled = false;
+      const far = reverse ? NEAR_SIDE.clone() : camera.position.clone();
+      const base = far.clone().normalize();
+      const d0 = far.length();
+      const q1 = new THREE.Quaternion().setFromUnitVectors(base, n);
+      const q = new THREE.Quaternion();
+      const id = new THREE.Quaternion();
+      // privirea finală: spre nordul local (tangent la suprafață), cu orizontul Lunii în cadru
+      let north = new THREE.Vector3(0, 1, 0).addScaledVector(n, -n.y);
+      if (north.lengthSq() < 1e-6) north = new THREE.Vector3(1, 0, 0);
+      north.normalize();
+      const horizon = n.clone().addScaledVector(north, 0.32);
+      const target = new THREE.Vector3();
+      const fov0 = baseFov();
+      const SPLIT = 0.6;
+      stopFlight = animate(ms, (t) => {
+        const k = reverse ? 1 - t : t;
+        const a = smooth(k / SPLIT);
+        q.slerpQuaternions(id, q1, a);
+        const low = smooth((k - SPLIT) / (1 - SPLIT));
+        const dist = k < SPLIT ? d0 + (1.62 - d0) * a : 1.62 + (1.045 - 1.62) * low;
+        camera.position.copy(base).applyQuaternion(q).multiplyScalar(dist);
+        const h = smooth((k - 0.5) / 0.5);
+        target.set(0, 0, 0).lerp(horizon, h);
+        camera.up.set(0, 1, 0).lerp(n, h).normalize();
+        camera.lookAt(target);
+        camera.fov = fov0 * (1 - 0.18 * h);
+        camera.updateProjectionMatrix();
+      }, () => {
+        if (reverse) {
+          camera.up.set(0, 1, 0);
+          camera.fov = baseFov();
+          camera.updateProjectionMatrix();
+          camera.lookAt(0, 0, 0);
+          controls.enabled = true;
+        }
+        done?.();
+      }, linear);
+    };
+    const fly = (lat: number, lon: number, done: () => void) => descend(surface(lat, lon), false, 2600, done);
     api.current = { select, fly, illuminate };
     select(landingId);
-    // animația de intrare
-    if (intro === 'far') flyPath(NEAR_SIDE.clone().multiplyScalar(9), NEAR_SIDE, 2200, undefined, easeOutCubic);
-    else if (intro === 'site' && focusRef.current) flyPath(surface(focusRef.current.latDeg, focusRef.current.lonDeg, 1.03), NEAR_SIDE, 2200, undefined, easeOutCubic);
+    if (intro === 'far') settle(1500);
+    else if (intro === 'site' && focusRef.current) descend(surface(focusRef.current.latDeg, focusRef.current.lonDeg), true, 2200);
 
     // clic pe glob: alege cel mai apropiat punct (în limita a ~4° de arc)
     const ray = new THREE.Raycaster();
@@ -285,23 +339,28 @@ export default function MoonGlobe({ onFail, onModel, landing, landingId, sunDire
       renderer.setSize(w, h);
       labels.setSize(w, h);
       camera.aspect = w / Math.max(1, h);
+      camera.fov = baseFov();
       camera.updateProjectionMatrix();
     };
     const ro = new ResizeObserver(resize);
     ro.observe(el);
     resize();
 
-    const reduced = prefersReducedMotion();
     let raf = 0;
     const loop = () => {
       raf = requestAnimationFrame(loop);
       if (controls.enabled) controls.update();
-      for (const m of markers.values()) m.label.visible = m.normal.dot(camera.position) > m.dot.position.length();
-      const sel = selected != null ? markers.get(selected) : null;
-      if (sel && !reduced) {
-        const k = 1 + 0.18 * Math.sin(performance.now() / 380);
-        sel.ring.scale.setScalar(k);
-        (sel.ring.material as THREE.MeshBasicMaterial).opacity = 0.55 + 0.35 * (1 - (k - 0.82) / 0.36);
+      // markerele păstrează aceeași mărime pe ecran la orice zoom; dispar în coborâre și până se încarcă relieful
+      const camDist = camera.position.length();
+      const k = THREE.MathUtils.clamp((camDist - 1) / (NEAR_SIDE.length() - 1), 0.05, 1.6);
+      for (const [id, m] of markers) {
+        const facing = m.normal.dot(camera.position) > m.dot.position.length();
+        const show = ready && camDist > 1.45;
+        m.dot.visible = show;
+        m.dot.scale.setScalar(k * (id === selected ? 1.3 : 1));
+        m.ring.visible = show && id === selected;
+        m.ring.scale.setScalar(k);
+        m.label.visible = show && facing;
       }
       renderer.render(scene, camera);
       labels.render(scene, camera);
@@ -335,5 +394,5 @@ export default function MoonGlobe({ onFail, onModel, landing, landingId, sunDire
     if (flyToFocus && f) api.current?.fly(f.latDeg, f.lonDeg, () => arriveRef.current());
   }, [flyToFocus, quality]);
 
-  return <div ref={host} className="s3-host moon-globe" tabIndex={0} role="group" aria-label="Glob lunar interactiv. Rotește cu săgețile și folosește plus sau minus pentru zoom." />;
+  return <div ref={host} className="s3-host moon-globe" tabIndex={0} role="group" aria-label="Interactive lunar globe. Rotate with the arrow keys; use plus or minus to zoom." />;
 }

@@ -5,7 +5,7 @@ import { fmtElapsed, fmtUtcMs } from '@/lib/logic/format';
 import { Tag } from '../shared/common';
 import type { Side } from './ScenarioCards';
 
-const DETAIL_TEXT: Record<Detail, string> = { both: 'ambele vizibile', sun: 'doar Soarele', earth: 'doar Pământul', none: 'niciunul vizibil', unk: 'necunoscut' };
+const DETAIL_TEXT: Record<Detail, string> = { both: 'both visible', sun: 'Sun only', earth: 'Earth only', none: 'neither visible', unk: 'unknown' };
 
 interface Props {
   sides: Side[];
@@ -26,19 +26,19 @@ export function SharedTimeline({ sides, total, step, cursor, playing, syncLabel,
   const pct = (t: number) => `${(Math.min(t, total) / total) * 100}%`;
   const valueText = `${fmtElapsed(cursor)}. ` + sides.map((s) => `${s.site.short}: ${fmtUtcMs(s.t0 + cursor * 60_000)}, ${DETAIL_TEXT[segAt(s.an.detail, cursor).state]}`).join('. ');
   return (
-    <section className="dock" aria-label="Cronologia comparației">
+    <section className="dock" aria-label="Comparison timeline">
       <div className="dock-ctl">
-        <button type="button" className="btn icon play" onClick={onPlay} aria-label={playing ? 'Pauză' : 'Redă'}>
+        <button type="button" className="btn icon play" onClick={onPlay} aria-label={playing ? 'Pause' : 'Play'}>
           {playing ? '❚❚' : '▶'}
         </button>
         <button type="button" className="btn sm" onClick={() => prev != null && onSeek(prev)} disabled={prev == null}>
-          ◀ Evenimentul anterior
+          ◀ Previous event
         </button>
         <button type="button" className="btn sm" onClick={() => next != null && onSeek(next)} disabled={next == null}>
-          Evenimentul următor ▶
+          Next event ▶
         </button>
         <button type="button" className="btn sm" onClick={onReset} disabled={cursor === 0 && !playing}>
-          Începutul scenariului
+          Start of the period
         </button>
         <div className="dock-time">
           <b className="mono">{fmtElapsed(cursor)}</b>
@@ -70,7 +70,7 @@ export function SharedTimeline({ sides, total, step, cursor, playing, syncLabel,
               step={step}
               value={cursor}
               onChange={(e) => onSeek(Number(e.target.value))}
-              aria-label="Momentul selectat, comun ambelor scenarii"
+              aria-label="Selected moment, shared by both options"
               aria-valuetext={valueText}
             />
           </div>
@@ -82,12 +82,12 @@ export function SharedTimeline({ sides, total, step, cursor, playing, syncLabel,
             ))}
           </div>
         </div>
-        <ul className="legend" aria-label="Legenda timeline-ului">
-          <li className="lg lg-both">Ambele vizibile</li>
-          <li className="lg lg-sun">Doar Soarele</li>
-          <li className="lg lg-earth">Doar Pământul</li>
-          <li className="lg lg-none">Niciunul</li>
-          <li className="lg lg-unk">Necunoscut</li>
+        <ul className="legend" aria-label="Timeline legend">
+          <li className="lg lg-both">Both visible</li>
+          <li className="lg lg-sun">Sun only</li>
+          <li className="lg lg-earth">Earth only</li>
+          <li className="lg lg-none">Neither</li>
+          <li className="lg lg-unk">Unknown</li>
         </ul>
       </div>
     </section>

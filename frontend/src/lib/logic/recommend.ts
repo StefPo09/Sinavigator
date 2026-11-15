@@ -18,30 +18,37 @@ export interface AltOption {
   spareMin: number;
   /** the window is still open when that scenario's analyzed period ends */
   truncatedEnd: boolean;
+  /** the window was already open at the requested start; only the part after it is counted */
+  clippedStart: boolean;
 }
 
 export const RANKING_RULE =
-  'Criteriu: (1) activitatea încape într-o fereastră comună cunoscută Soare + Pământ; (2) dintre acestea, cel mai devreme început UTC (la egalitate, fereastra mai lungă). Se caută în toate scenariile încărcate care încep la sau după startul cerut.';
+  'Rule: (1) the activity fits in a known common Sun + Earth window, counted from the requested start; (2) among those, the earliest UTC start (on a tie, the longer window). A window already open at the requested start only counts from that start.';
 
 export function findOptions(scenarios: Scenario[], analyses: Map<string, Analysis>, readyFromMs: number, activityMin: number): AltOption[] {
   const out: AltOption[] = [];
   for (const sc of scenarios) {
     const t0 = Date.parse(sc.startUtc);
-    if (t0 < readyFromMs) continue;
     const a = analyses.get(sc.id);
     if (!a) continue;
+    // a scenario that started earlier still counts from readyFromMs on: only the part of a
+    // window after the requested start is usable
+    const from = Math.max(0, (readyFromMs - t0) / 60_000);
     for (const w of a.segs.both) {
-      const len = w.end - w.start;
-      if (w.state !== 'vis' || len < activityMin - 1e-6) continue;
+      if (w.state !== 'vis' || w.end <= from) continue;
+      const start = Math.max(w.start, from);
+      const len = w.end - start;
+      if (len < activityMin - 1e-6) continue;
       out.push({
         scenario: sc,
         siteId: sc.siteId,
-        startMs: t0 + w.start * 60_000,
+        startMs: t0 + start * 60_000,
         endMs: t0 + w.end * 60_000,
-        offsetMin: w.start,
+        offsetMin: start,
         lengthMin: len,
         spareMin: len - activityMin,
         truncatedEnd: w.truncEnd,
+        clippedStart: start > w.start,
       });
     }
   }

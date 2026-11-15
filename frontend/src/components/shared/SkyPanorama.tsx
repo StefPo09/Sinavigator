@@ -13,7 +13,7 @@ export interface ElRange {
 
 const H = 236;
 const PAD = { l: 40, r: 10, t: 10, b: 30 };
-const COMPASS = ['S', 'SV', 'V', 'NV', 'N', 'NE', 'E', 'SE', 'S'];
+const COMPASS = ['S', 'SW', 'W', 'NW', 'N', 'NE', 'E', 'SE', 'S'];
 const wrap180 = (a: number) => ((((a + 180) % 360) + 360) % 360) - 180;
 
 export function elTicks(r: ElRange): number[] {
@@ -129,7 +129,7 @@ export function SkyPanorama({ a, profile, model, idx, sunState, earthState, rang
           {hor != null && t.threshold > 0 && <line x1={cx - 8} x2={cx + 8} y1={y(hor + t.threshold)} y2={y(hor + t.threshold)} className="thr" />}
           {state !== 'vis' && <circle cx={cx} cy={cy} r={10.5} className={`ghost ghost-${state}`} />}
           <text x={cx + (left ? -15 : 15)} y={cy + 4} textAnchor={left ? 'end' : 'start'} className="margin-label">
-            {m == null ? 'fără date' : fmtDeg(m, 1, true)}
+            {m == null ? 'no data' : fmtDeg(m, 1, true)}
           </text>
         </g>
       ),

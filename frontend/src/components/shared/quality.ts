@@ -13,4 +13,4 @@ export function detectQuality(): Quality {
   return 'high';
 }
 
-export const QUALITY_TEXT: Record<Quality, string> = { high: 'Ridicată', low: 'Redusă' };
+export const QUALITY_TEXT: Record<Quality, string> = { high: 'High', low: 'Low' };
