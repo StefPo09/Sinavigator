@@ -1,1 +1,0 @@
-"""Sinavigator backend package."""
