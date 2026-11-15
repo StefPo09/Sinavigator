@@ -54,8 +54,9 @@ export function IntervalTable({ sides }: { sides: Side[] }) {
 }
 
 const EXTERNAL = [
-  { name: 'LROC QuickMap', url: 'https://quickmap.lroc.asu.edu/', use: 'Inspecting the sites and identifying terrain/image products (those products are cited).' },
-  { name: 'NASA Moon Trek', url: 'https://trek.nasa.gov/moon/', use: 'Lunar map and layers for locating the Apollo sites.' },
+  { name: 'LROC QuickMap', url: 'https://quickmap.lroc.asu.edu/', use: 'Map context and terrain/image-product inspection for the Apollo site views.' },
+  { name: 'NASA Moon Trek', url: 'https://trek.nasa.gov/moon/', use: 'Map context and surface-layer reference for locating the Apollo sites.' },
+  { name: 'Canadian Space Agency — Moon exploration', url: 'https://www.asc-csa.gc.ca/eng/astronomy/moon-exploration/', use: 'Mission-planning context for the existing rover activity exercise.' },
   { name: 'JPL Horizons', url: 'https://ssd.jpl.nasa.gov/horizons/', use: 'Source of the Sun and Earth ephemerides in the Apollo set.' },
   { name: 'LROC coordinates of the Apollo modules', url: 'https://lroc.im-ldi.com/data/support/downloads/2016_LROC_Coordinates_of_Human_Features.pdf', use: 'Latitude and longitude of the landing sites.' },
   { name: 'LROC Apollo 17 model', url: 'https://data.lroc.im-ldi.com/lroc/view_rdr/NAC_DTM_APOLLO17', use: 'Source of the regional terrain in the Taurus–Littrow valley.' },
@@ -166,7 +167,7 @@ function MethodsBody({ bundle, origin, reason, warnings, sides }: { bundle: Bund
         </ul>
 
         <h3>External resources</h3>
-        <p className="muted small">Listed as citations and planned sources. The page queries none of them live, and none is integrated unless the data file declares it above.</p>
+        <p className="muted small">These resources provide the maps, mission context and scientific data behind the workspace. They open in a new tab; the app does not query them live, so the workspace remains usable offline.</p>
         <ul className="ext">
           {EXTERNAL.map((r) => (
             <li key={r.url}>

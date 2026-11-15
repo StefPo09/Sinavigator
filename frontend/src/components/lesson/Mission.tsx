@@ -120,6 +120,13 @@ export function Mission({ ws }: { ws: WS }) {
         <p className="muted small">
           Same rule as everywhere in the atlas: a <Term k="fereastra" />, with a <Term k="marja" />. Data covers {fmtUtcMs(ws.cov.startMs)} → {fmtUtcMs(ws.cov.endMs)}.
         </p>
+        <p className="muted small">
+          This activity follows the mission-planning context described by the{' '}
+          <a href="https://www.asc-csa.gc.ca/eng/astronomy/moon-exploration/" target="_blank" rel="noopener noreferrer">
+            Canadian Space Agency
+          </a>
+          ; the visibility result is still limited to this atlas&apos;s geometric model.
+        </p>
       </header>
 
       <ol className="steps">
