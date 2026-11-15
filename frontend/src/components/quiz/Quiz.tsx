@@ -126,7 +126,7 @@ export function Quiz({ bundle, activityMin, onClose }: { bundle: Bundle; activit
           <h2>Ready?</h2>
           <p>
             {questions.length} questions · {QUIZ_TIME_MS / 1000} seconds each. Faster correct answers earn more points (500–1000), and every extra correct answer in a row adds a 100-point
-            streak bonus. Data questions are computed from the same Horizons and LROC data you explored.
+            streak bonus. Every question is about something the tutorial showed you or the landing sites revealed; data questions are computed from the same Horizons and LROC data you explored.
           </p>
           <p className="muted small">Keyboard: 1–4 or A–D to answer, Enter for the next question.</p>
           <button type="button" className="btn primary quiz-go" onClick={() => start(0)} autoFocus>

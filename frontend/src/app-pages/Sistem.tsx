@@ -5,13 +5,15 @@ import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { EPHEMERIS_LABEL, moonGeocentric, moonPhase, sunGeocentric } from '@/lib/logic/ephemeris';
 import { fmtUtcMs } from '@/lib/logic/format';
+import { FlightTitle } from '../components/shared/FlightTitle';
 import { TimeBar } from '../components/shared/TimeBar';
+import { LoadTask } from '../components/shared/LoadTask';
 import { webglAvailable } from '../components/shared/three-utils';
 import type { WS } from '../components/shared/types';
 
 const SystemScene = dynamic(() => import('../components/sistem/SystemScene'), {
   ssr: false,
-  loading: () => <p className="scene-loading">Preparing the system scene (Sun, Earth and Moon textures)…</p>,
+  loading: () => <LoadTask label="Preparing the system scene" detail="Sun, Earth and Moon textures" />,
 });
 
 const pct = (x: number) => `${Math.round(x * 100)} %`;
@@ -52,6 +54,7 @@ export function SistemView({ ws }: { ws: WS }) {
     <div className="atlas-grid">
       <section className="scene-frame" aria-label="Sun, Earth and Moon, schematic">
         <div className="scene-view">
+          {ws.flight === 'moon' && <FlightTitle eyebrow="Translunar approach" title="The Moon" detail={`${km(moon.distKm)} from Earth · ${pct(phase.illuminated)} lit as seen from Earth`} />}
           {gl === false ? (
             <div className="scene-fallback">
               <p>
@@ -89,6 +92,10 @@ export function SistemView({ ws }: { ws: WS }) {
       </section>
 
       <aside className="inspector" aria-label="What you see in the system">
+        <button type="button" className="btn primary wide sys-enter" onClick={toMoon} disabled={!!ws.flight}>
+          {ws.flight === 'moon' ? 'Approaching the Moon…' : 'Explore the Moon'}
+        </button>
+
         <div className="insp-section">
           <h2 className="insp-h">What moves</h2>
           <p>
@@ -122,9 +129,6 @@ export function SistemView({ ws }: { ws: WS }) {
           <dd className="mono">{fmtUtcMs(t)}</dd>
         </dl>
 
-        <button type="button" className="btn primary wide" onClick={toMoon} disabled={!!ws.flight}>
-          {ws.flight === 'moon' ? 'Approaching the Moon…' : 'Explore the Moon'}
-        </button>
 
         <details className="insp-more">
           <summary>What is computed and what is schematic</summary>

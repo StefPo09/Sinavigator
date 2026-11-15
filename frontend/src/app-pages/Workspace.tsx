@@ -379,7 +379,7 @@ function Workspace({ bundle, origin, source, reason, warnings }: { bundle: Bundl
           setFading(false);
         }, reduced ? 0 : 60);
       },
-      reduced ? 0 : 340,
+      reduced ? 0 : 500,
     );
   };
   const go = (p: Perspective) => {
@@ -534,9 +534,6 @@ function Workspace({ bundle, origin, source, reason, warnings }: { bundle: Bundl
                 </button>
               ))}
             </div>
-            <button type="button" className="btn quiet" onClick={exportJson} disabled={!sides.length}>
-              Export JSON
-            </button>
           </div>
         </header>
         {synthetic && (
@@ -563,6 +560,15 @@ function Workspace({ bundle, origin, source, reason, warnings }: { bundle: Bundl
               </p>
             </header>
             <Comparison ws={ws} />
+            <div className="planner-download">
+              <button type="button" className="btn" onClick={exportJson} disabled={!sides.length}>
+                Download this comparison (.json)
+              </button>
+              <p className="muted small">
+                A data file with both plans: the computed visibility windows, your settings (activity length, horizon model, analysed moment) and the sources. Useful to check the
+                numbers or reuse them in a spreadsheet or another program; nothing is sent anywhere.
+              </p>
+            </div>
           </section>
         )}
 

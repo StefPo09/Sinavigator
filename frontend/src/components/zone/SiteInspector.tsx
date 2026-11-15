@@ -6,6 +6,7 @@ import { fmtDeg, fmtDur, fmtUtcMs } from '@/lib/logic/format';
 import { BODY_NOM, cardinal, conclusion, limitingWhy, scenarioAt, whyAt, type Why } from '@/lib/logic/lesson';
 import type { WS } from '../shared/types';
 import { Term } from '../lesson/Term';
+import { TrekSiteMap } from './TrekSiteMap';
 
 export const fmtLat = (v: number) => `${Math.abs(v).toFixed(4)}° ${v < 0 ? 'S' : 'N'}`;
 export const fmtLon = (v: number) => `${Math.abs(v).toFixed(4)}° ${v < 0 ? 'W' : 'E'}`;
@@ -133,6 +134,10 @@ export function SiteInspector({ ws }: { ws: WS }) {
         </p>
       </div>
 
+      <button type="button" className="btn primary wide insp-enter" onClick={() => ws.go('suprafata')} disabled={!!ws.flight}>
+        {ws.flight === 'site' ? 'Descending to the site…' : `Walk on the surface · ${l.name}`}
+      </button>
+
       <div className="insp-section">
         <div className="insp-row">
           <h2 className="insp-h">{fmtDur(ws.activityMin)} activity</h2>
@@ -161,9 +166,10 @@ export function SiteInspector({ ws }: { ws: WS }) {
         )}
       </div>
 
-      <button type="button" className="btn primary wide insp-enter" onClick={() => ws.go('suprafata')} disabled={!!ws.flight}>
-        {ws.flight === 'site' ? 'Descending to the site…' : `Walk on the surface · ${l.name}`}
-      </button>
+
+      <div className="insp-section">
+        <TrekSiteMap name={l.name} latDeg={l.latDeg} lonDeg={l.lonDeg} />
+      </div>
 
       <details className="insp-more">
         <summary>What data we have for this site</summary>

@@ -3,22 +3,23 @@
 // Suprafața unui loc real de aterizare. Scena arată mereu terenul real; concluziile
 // (vizibil / ascuns / noapte) folosesc modelul de orizont activ, la fel ca restul atlasului.
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { horizonAt, sampleIndex, type Body, type VisState } from '@/lib/logic/derive';
 import { siteSkyAt } from '@/lib/logic/bundleEphemeris';
 import { fmtUtcMs } from '@/lib/logic/format';
 import { angleDiff, cardinal, nextSunVisible } from '@/lib/logic/lesson';
 import { SkyPanorama, type ElRange } from '../shared/SkyPanorama';
 import { TimeBar } from '../shared/TimeBar';
+import { LoadTask } from '../shared/LoadTask';
 import { webglAvailable } from '../shared/three-utils';
 import type { WS } from '../shared/types';
 import { BodyLine, localSky, modelLabel, ModelSwitch, SiteConclusion } from '../zone/SiteInspector';
 import type { SkyState, SurfaceHandle } from './SurfaceScene';
-import { loadSiteTerrain, type SiteTerrain } from './siteTerrain';
+import { loadSiteTerrain, onTerrainProgress, terrainPct, type SiteTerrain } from './siteTerrain';
 
 const SurfaceScene = dynamic(() => import('./SurfaceScene'), {
   ssr: false,
-  loading: () => <p className="scene-loading">Preparing the ground view…</p>,
+  loading: () => <LoadTask label="Preparing the ground view" />,
 });
 
 const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
@@ -41,7 +42,13 @@ export function LandingSurface({ ws, onReplay }: { ws: WS; onReplay: () => void 
   const noop = useCallback(() => undefined, []);
   // coborârea de pe glob continuă în scenă o singură dată (nu la comutarea 3D/2D sau a calității)
   const [intro, setIntro] = useState(ws.prevStage === 'zone');
-  const introDone = useCallback(() => setIntro(false), []);
+  // the loading screen stays up until the scene has actually drawn, not just until the files arrived
+  const [drawn, setDrawn] = useState(false);
+  const tilesPct = useSyncExternalStore(onTerrainProgress, () => terrainPct(l.id, ws.quality), () => null);
+  const firstFrame = useCallback(() => {
+    setIntro(false);
+    setDrawn(true);
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -94,6 +101,7 @@ export function LandingSurface({ ws, onReplay }: { ws: WS; onReplay: () => void 
   }, [local?.an]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hasScene = mode === '3d' && gl && load.s !== 'loading' && sample != null;
+
   const inFrame = (az: number | null, el: number | null) => az != null && el != null && Math.abs(angleDiff(az, heading.az)) <= HALF_H && Math.abs(el - heading.pitch) <= HALF_V;
   const look = (k: Body) => {
     const p = k === 'sun' ? sample?.sun : sample?.earth;
@@ -120,7 +128,7 @@ export function LandingSurface({ ws, onReplay }: { ws: WS; onReplay: () => void 
               seed={hash(l.id)}
               modelUrl={null}
               onReady={onReady}
-              onFirstFrame={introDone}
+              onFirstFrame={firstFrame}
               onHeading={(az, pitch) => setHeading({ az, pitch })}
               onFail={() => {
                 setGl(false);
@@ -132,7 +140,7 @@ export function LandingSurface({ ws, onReplay }: { ws: WS; onReplay: () => void 
               intro={intro}
             />
           ) : load.s === 'loading' && mode === '3d' && gl ? (
-            <p className="scene-loading">Loading the LROC terrain tiles for {l.name} ({ws.quality === 'high' ? 'high' : 'low'} quality)…</p>
+            <LoadTask label={`Loading the LROC terrain tiles for ${l.name}`} pct={tilesPct} detail={`${ws.quality === 'high' ? 'high' : 'low'} quality · near, mid and far tiles`} />
           ) : !local ? (
             <div className="scene-fallback">
               <p>
@@ -155,6 +163,7 @@ export function LandingSurface({ ws, onReplay }: { ws: WS; onReplay: () => void 
               />
             </div>
           )}
+          {hasScene && !drawn && <LoadTask label={`Building the ground view at ${l.name}`} detail="terrain meshes and textures" />}
           {hasScene && (
             <div className="scene-caption">
               <p className="mono">

@@ -8,7 +8,7 @@ import type { LandingSite } from '@/lib/data/landingSites';
 import type { Direction3 } from '@/lib/logic/bundleEphemeris';
 import type { Quality } from '../shared/quality';
 import { starBackground, tex, TEX } from '../shared/bodies';
-import { animate, disposeScene, easeOutCubic, latLonMapping, prefersReducedMotion } from '../shared/three-utils';
+import { animate, disposeScene, easeInOutQuart, easeOutQuint, latLonMapping, prefersReducedMotion } from '../shared/three-utils';
 import { loadMoonModel, moonLoadPct, progressListeners } from '../shared/moonModel';
 
 /** Starea modelului 3D al Lunii (GLB din public/3d-models). */
@@ -141,7 +141,7 @@ export default function MoonGlobe({ onFail, onModel, landing, landingId, sunDire
       const n = surface(site.latDeg, site.lonDeg);
       const dot = new THREE.Mesh(new THREE.SphereGeometry(0.0065, 16, 8), new THREE.MeshBasicMaterial({ color: 0xeef1ec }));
       dot.position.copy(n.clone().multiplyScalar(1.004));
-      const ring = new THREE.Mesh(new THREE.RingGeometry(0.0115, 0.0128, 64), new THREE.MeshBasicMaterial({ color: 0xd8f479, side: THREE.DoubleSide, transparent: true, opacity: 0.95 }));
+      const ring = new THREE.Mesh(new THREE.RingGeometry(0.0115, 0.0128, 64), new THREE.MeshBasicMaterial({ color: 0xcdd0d2, side: THREE.DoubleSide, transparent: true, opacity: 0.95 }));
       ring.position.copy(n.clone().multiplyScalar(1.005));
       ring.lookAt(n.clone().multiplyScalar(2));
       ring.visible = false;
@@ -203,12 +203,12 @@ export default function MoonGlobe({ onFail, onModel, landing, landingId, sunDire
       const t = Math.min(1, Math.max(0, x));
       return t * t * (3 - 2 * t);
     };
-    const linear = (t: number) => t;
     /** Așezare din tablou: Luna umple deja cadrul; camera se rotește ușor spre fața vizibilă și se stabilizează. */
     const settle = (ms: number) => {
       stopFlight?.();
       controls.enabled = false;
-      const from = NEAR_SIDE.clone().multiplyScalar(1.22).applyAxisAngle(new THREE.Vector3(0, 1, 0), -0.42);
+      // continues the approach from the System page: farther out, swinging round to the near side
+      const from = NEAR_SIDE.clone().multiplyScalar(1.55).applyAxisAngle(new THREE.Vector3(0, 1, 0), -0.75);
       const q1 = new THREE.Quaternion().setFromUnitVectors(from.clone().normalize(), NEAR_SIDE.clone().normalize());
       const q = new THREE.Quaternion();
       const id = new THREE.Quaternion();
@@ -218,12 +218,12 @@ export default function MoonGlobe({ onFail, onModel, landing, landingId, sunDire
       stopFlight = animate(ms, (t) => {
         q.slerpQuaternions(id, q1, t);
         camera.position.copy(base).applyQuaternion(q).multiplyScalar(d0 + (d1 - d0) * t);
-        camera.up.set(0, 1, 0).applyAxisAngle(camera.position.clone().normalize(), -0.06 * (1 - t));
+        camera.up.set(0, 1, 0).applyAxisAngle(camera.position.clone().normalize(), -0.12 * (1 - t));
         camera.lookAt(0, 0, 0);
       }, () => {
         camera.up.set(0, 1, 0);
         controls.enabled = true;
-      }, easeOutCubic);
+      }, easeOutQuint);
     };
     /**
      * Coborâre spre un loc: (1) arc pe deasupra globului până deasupra sitului, (2) apropiere razantă,
@@ -244,6 +244,7 @@ export default function MoonGlobe({ onFail, onModel, landing, landingId, sunDire
       north.normalize();
       const horizon = n.clone().addScaledVector(north, 0.32);
       const target = new THREE.Vector3();
+      const fwd = new THREE.Vector3();
       const fov0 = baseFov();
       const SPLIT = 0.6;
       stopFlight = animate(ms, (t) => {
@@ -257,6 +258,10 @@ export default function MoonGlobe({ onFail, onModel, landing, landingId, sunDire
         target.set(0, 0, 0).lerp(horizon, h);
         camera.up.set(0, 1, 0).lerp(n, h).normalize();
         camera.lookAt(target);
+        // bank into the arc, level out for the final approach
+        fwd.subVectors(target, camera.position).normalize();
+        camera.up.applyAxisAngle(fwd, 0.16 * Math.sin(Math.PI * Math.min(1, k / SPLIT)) * (1 - h));
+        camera.lookAt(target);
         camera.fov = fov0 * (1 - 0.18 * h);
         camera.updateProjectionMatrix();
       }, () => {
@@ -268,13 +273,13 @@ export default function MoonGlobe({ onFail, onModel, landing, landingId, sunDire
           controls.enabled = true;
         }
         done?.();
-      }, linear);
+      }, easeInOutQuart);
     };
-    const fly = (lat: number, lon: number, done: () => void) => descend(surface(lat, lon), false, 2600, done);
+    const fly = (lat: number, lon: number, done: () => void) => descend(surface(lat, lon), false, 3800, done);
     api.current = { select, fly, illuminate };
     select(landingId);
-    if (intro === 'far') settle(1500);
-    else if (intro === 'site' && focusRef.current) descend(surface(focusRef.current.latDeg, focusRef.current.lonDeg), true, 2200);
+    if (intro === 'far') settle(2600);
+    else if (intro === 'site' && focusRef.current) descend(surface(focusRef.current.latDeg, focusRef.current.lonDeg), true, 2800);
 
     // clic pe glob: alege cel mai apropiat punct (în limita a ~4° de arc)
     const ray = new THREE.Raycaster();

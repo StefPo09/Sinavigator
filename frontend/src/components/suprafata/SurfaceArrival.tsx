@@ -4,6 +4,7 @@
 // Nu este zborul Apollo, nici o fereastră de lansare validată, și nu schimbă momentul analizat.
 import { useEffect, useRef, useState } from 'react';
 import { fmtUtcMs } from '@/lib/logic/format';
+import { horizonsEphemeris, loadHorizonsEphemeris } from '@/lib/data/horizons';
 import { nextLunarTransfer } from '@/lib/logic/lunarTransfer';
 import { TransferDiagram } from './TransferDiagram';
 import styles from './SurfaceArrival.module.css';
@@ -18,7 +19,18 @@ const DURATION_MS = 4200;
 export function SurfaceArrival({ site, onClose }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [nowMs] = useState(() => Date.now());
-  const [transfer] = useState(() => nextLunarTransfer(nowMs));
+  const [transfer, setTransfer] = useState(() => nextLunarTransfer(nowMs, horizonsEphemeris() ?? undefined));
+
+  // JPL Horizons positions replace the analytic estimate as soon as they arrive
+  useEffect(() => {
+    let alive = true;
+    void loadHorizonsEphemeris().then((eph) => {
+      if (alive && eph) setTransfer((t) => (t?.eph === eph ? t : nextLunarTransfer(nowMs, eph)));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [nowMs]);
   const [reducedMotion] = useState(() => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const [progress, setProgress] = useState(reducedMotion ? 1 : 0);
 
@@ -81,7 +93,7 @@ export function SurfaceArrival({ site, onClose }: Props) {
                 <span>{fmtUtcMs(flightTime)}</span>
               </div>
             )}
-            <p className={styles.modelNote}>Initial orbit at 200 km, departing on the Sun side. Estimated positions, 2D projection, enlarged discs.</p>
+            <p className={styles.modelNote}>Initial orbit at 200 km, departing on the Sun side. Positions: {transfer.eph.label}. 2D projection, enlarged discs.</p>
           </>
         ) : (
           <p>No transfer could be estimated for the coming period.</p>

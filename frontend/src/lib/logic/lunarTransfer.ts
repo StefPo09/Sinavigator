@@ -1,4 +1,5 @@
-import { moonGeocentric, sunGeocentric } from './ephemeris.ts';
+import type { EclipticPos } from './ephemeris.ts';
+import { ANALYTIC_EPHEMERIS, type Ephemeris } from './ephemerisSeries.ts';
 
 const RAD = Math.PI / 180;
 const HOUR = 3_600_000;
@@ -10,21 +11,23 @@ const wrap180 = (degrees: number) => ((degrees + 540) % 360) - 180;
 export interface Transfer {
   departureMs: number;
   arrivalMs: number;
-  encounter: ReturnType<typeof moonGeocentric>;
+  encounter: EclipticPos;
+  /** The positions the window was computed from (Horizons or the analytic fallback). */
+  eph: Ephemeris;
 }
 
 const halfPeriodMs = (apoapsis: number) =>
   Math.PI * Math.sqrt(((PARKING_RADIUS + apoapsis) / 2) ** 3 / EARTH_MU) * 1000;
 
-function candidate(departureMs: number) {
+function candidate(eph: Ephemeris, departureMs: number) {
   // At apogee the ideal ellipse meets the near edge of the moving Moon.
   let arrivalMs = departureMs + halfPeriodMs(384_400 - MOON_RADIUS);
   for (let i = 0; i < 10; i++) {
-    arrivalMs = departureMs + halfPeriodMs(moonGeocentric(arrivalMs).distKm - MOON_RADIUS);
+    arrivalMs = departureMs + halfPeriodMs(eph.moon(arrivalMs).distKm - MOON_RADIUS);
   }
-  const encounter = moonGeocentric(arrivalMs);
-  const error = wrap180(encounter.lonDeg - sunGeocentric(departureMs).lonDeg - 180);
-  return { departureMs, arrivalMs, encounter, error };
+  const encounter = eph.moon(arrivalMs);
+  const error = wrap180(encounter.lonDeg - eph.sun(departureMs).lonDeg - 180);
+  return { departureMs, arrivalMs, encounter, eph, error };
 }
 
 /**
@@ -33,15 +36,15 @@ function candidate(departureMs: number) {
  * The parking orbit is assumed to be available in the required plane. This is a single
  * modeled opportunity, with no Earth launch, lunar capture, or descent calculation.
  */
-export function nextLunarTransfer(now: number): Transfer | null {
+export function nextLunarTransfer(now: number, eph: Ephemeris = ANALYTIC_EPHEMERIS): Transfer | null {
   if (!Number.isFinite(now)) return null;
-  let left = candidate(now);
+  let left = candidate(eph, now);
   if (Math.abs(left.error) < 1e-9) return left;
   for (let i = 1; i <= 40 * 24; i++) {
-    let right = candidate(now + i * HOUR);
+    let right = candidate(eph, now + i * HOUR);
     if (left.error < 0 && right.error >= 0) {
       while (right.departureMs - left.departureMs > 1000) {
-        const middle = candidate((left.departureMs + right.departureMs) / 2);
+        const middle = candidate(eph, (left.departureMs + right.departureMs) / 2);
         if (middle.error >= 0) right = middle;
         else left = middle;
       }
@@ -58,8 +61,8 @@ export type Point = readonly [x: number, y: number];
 export function transferFrame(transfer: Transfer, fraction: number) {
   const p = Math.max(0, Math.min(1, fraction));
   const timeMs = transfer.departureMs + p * (transfer.arrivalMs - transfer.departureMs);
-  const moon = moonGeocentric(timeMs);
-  const sun = sunGeocentric(timeMs);
+  const moon = transfer.eph.moon(timeMs);
+  const sun = transfer.eph.sun(timeMs);
   const apoapsis = transfer.encounter.distKm - MOON_RADIUS;
   const a = (apoapsis + PARKING_RADIUS) / 2;
   const e = (apoapsis - PARKING_RADIUS) / (apoapsis + PARKING_RADIUS);
@@ -73,15 +76,19 @@ export function transferFrame(transfer: Transfer, fraction: number) {
     else high = mid;
   }
   const anomaly = (low + high) / 2;
-  const relativeLongitude = (moon.lonDeg - transfer.encounter.lonDeg) * RAD;
-  const moonProjected = moon.distKm * Math.cos(moon.latDeg * RAD);
   return {
     timeMs,
-    moon: [moonProjected * Math.cos(relativeLongitude), moonProjected * Math.sin(relativeLongitude)] as Point,
+    moon: projectMoon(transfer, moon),
     craft: [
       -a * (Math.cos(anomaly) - e) * Math.cos(transfer.encounter.latDeg * RAD),
       -a * Math.sqrt(1 - e * e) * Math.sin(anomaly),
     ] as Point,
     sunAngle: (sun.lonDeg - transfer.encounter.lonDeg) * RAD,
   };
+}
+
+function projectMoon(transfer: Transfer, moon: EclipticPos): Point {
+  const relativeLongitude = (moon.lonDeg - transfer.encounter.lonDeg) * RAD;
+  const projected = moon.distKm * Math.cos(moon.latDeg * RAD);
+  return [projected * Math.cos(relativeLongitude), projected * Math.sin(relativeLongitude)];
 }

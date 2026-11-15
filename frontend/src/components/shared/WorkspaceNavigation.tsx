@@ -68,6 +68,7 @@ export function WorkspaceNavigation({
                 <button
                   type="button"
                   className="nav-item"
+                  data-stage={id}
                   onClick={() => onNavigate(id)}
                   aria-current={current ? 'page' : undefined}
                   disabled={current || busy || needsSite}

@@ -143,6 +143,9 @@ export function disposeScene(root: THREE.Object3D) {
 
 export const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 export const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+/** Slow start and a long, soft arrival: for camera flights that should feel weighty. */
+export const easeInOutQuart = (t: number) => (t < 0.5 ? 8 * t ** 4 : 1 - (-2 * t + 2) ** 4 / 2);
+export const easeOutQuint = (t: number) => 1 - (1 - t) ** 5;
 
 /**
  * Animație pe durata `ms`: apelează step(k) cu k ∈ [0, 1] (după easing), apoi done().

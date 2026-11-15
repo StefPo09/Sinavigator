@@ -10,6 +10,7 @@ import { cardinal } from '@/lib/logic/lesson';
 import { BODY_NAME, StatePill } from '../components/shared/common';
 import { SkyPanorama, type ElRange } from '../components/shared/SkyPanorama';
 import { TimeBar } from '../components/shared/TimeBar';
+import { LoadTask } from '../components/shared/LoadTask';
 import { webglAvailable } from '../components/shared/three-utils';
 import type { WS } from '../components/shared/types';
 import type { SkyState, SurfaceHandle } from '../components/suprafata/SurfaceScene';
@@ -18,7 +19,7 @@ import { SurfaceArrival } from '../components/suprafata/SurfaceArrival';
 
 const SurfaceScene = dynamic(() => import('../components/suprafata/SurfaceScene'), {
   ssr: false,
-  loading: () => <p className="scene-loading">Preparing the ground view…</p>,
+  loading: () => <LoadTask label="Preparing the ground view" />,
 });
 
 /** Modelul 3D opțional exportat din Blender (GLB). Apare doar dacă fișierul există. */

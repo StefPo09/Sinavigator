@@ -11,7 +11,7 @@ import { CSS2DObject, CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer
 import { moonGeocentric, sunGeocentric } from '@/lib/logic/ephemeris';
 import { earthRotationAngle, makeEarth, makeSun, starBackground, tex, TEX } from '../shared/bodies';
 import { loadMoonModel } from '../shared/moonModel';
-import { animate, disposeScene, easeOutCubic, prefersReducedMotion } from '../shared/three-utils';
+import { animate, disposeScene, easeInOutQuart, easeOutQuint, prefersReducedMotion } from '../shared/three-utils';
 
 interface Props {
   timeMs: number;
@@ -136,7 +136,7 @@ export default function SystemScene({ timeMs, resetToken, onSelectMoon, onFail, 
     // contur la hover: „coajă” inversată, puțin mai mare, în culoarea de accent
     const outline = new THREE.Mesh(
       new THREE.SphereGeometry(MOON_R * 1.13, 48, 24),
-      new THREE.MeshBasicMaterial({ color: 0xd8f479, side: THREE.BackSide, transparent: true, opacity: 0.95, depthWrite: false }),
+      new THREE.MeshBasicMaterial({ color: 0xcdd0d2, side: THREE.BackSide, transparent: true, opacity: 0.95, depthWrite: false }),
     );
     outline.visible = false;
     moon.add(outline);
@@ -199,6 +199,9 @@ export default function SystemScene({ timeMs, resetToken, onSelectMoon, onFail, 
       // punctul de control: în fața Pământului, deasupra planului orbitei → arc amplu, cu paralaxă
       const ctrl = EARTH.clone().addScaledVector(p0.clone().sub(EARTH).normalize(), EARTH_R * 3.2).add(new THREE.Vector3(0, 4.5, 0));
       const curve = new THREE.QuadraticBezierCurve3(p0, ctrl, p1);
+      // anticipation: the camera eases back a little before it commits to the flight
+      const away = p0.clone().sub(mw).normalize();
+      const pullBack = p0.distanceTo(mw) * 0.05;
       const look = new THREE.Vector3();
       const fwd = new THREE.Vector3();
       const glow = sun.children.filter((c) => c instanceof THREE.Sprite) as THREE.Sprite[];
@@ -208,20 +211,22 @@ export default function SystemScene({ timeMs, resetToken, onSelectMoon, onFail, 
         return t * t * (3 - 2 * t);
       };
       stop = animate(
-        1900,
+        3400,
         (k) => {
           curve.getPoint(k, camera.position);
+          if (k < 0.2) camera.position.addScaledVector(away, pullBack * Math.sin(Math.PI * (k / 0.2)));
           // privirea se mută spre Lună mai devreme decât camera (anticipare)
           look.lerpVectors(t0, mw, smooth(k * 1.6));
           camera.up.set(0, 1, 0);
           camera.lookAt(look);
           // înclinare în viraj: maximă la mijlocul curbei
           fwd.subVectors(look, camera.position).normalize();
-          camera.up.applyAxisAngle(fwd, -0.14 * Math.sin(Math.PI * k));
+          camera.up.applyAxisAngle(fwd, -0.22 * Math.sin(Math.PI * k));
           camera.lookAt(look);
-          camera.fov = fov0 + (32 - fov0) * smooth(k);
+          // the field of view breathes out as the camera accelerates, then narrows onto the Moon
+          camera.fov = fov0 + (32 - fov0) * smooth(k) + 7 * Math.sin(Math.PI * k) ** 2 * (1 - k);
           camera.updateProjectionMatrix();
-          renderer.toneMappingExposure = exp0 * (1 + 0.55 * smooth((k - 0.7) / 0.3));
+          renderer.toneMappingExposure = exp0 * (1 + 0.8 * smooth((k - 0.72) / 0.28));
           glow.forEach((g, i) => (g.material.opacity = glow0[i] * (1 - 0.7 * smooth(k * 1.3))));
           sunLabel.visible = earthLabel.visible = moonLabel.visible = k < 0.12;
           orbit.material.opacity = 0.18 * (1 - smooth(k * 2));
@@ -230,7 +235,7 @@ export default function SystemScene({ timeMs, resetToken, onSelectMoon, onFail, 
           busy = false;
           done();
         },
-        (t) => t,
+        easeInOutQuart,
       );
     };
     api.current = { update, reset, flyToMoon: fly };
@@ -250,7 +255,7 @@ export default function SystemScene({ timeMs, resetToken, onSelectMoon, onFail, 
       const back = new THREE.QuadraticBezierCurve3(pStart, mw.clone().lerp(CAM_HOME, 0.5).add(new THREE.Vector3(0, 6, 4)), CAM_HOME.clone());
       const exp0 = renderer.toneMappingExposure;
       stop = animate(
-        1700,
+        2600,
         (k) => {
           back.getPoint(k, camera.position);
           controls.target.lerpVectors(mw, TARGET_HOME, k);
@@ -263,7 +268,7 @@ export default function SystemScene({ timeMs, resetToken, onSelectMoon, onFail, 
           controls.enabled = true;
           busy = false;
         },
-        easeOutCubic,
+        easeOutQuint,
       );
     }
 

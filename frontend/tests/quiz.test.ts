@@ -28,3 +28,11 @@ test('points reward correct and fast answers', () => {
   assert.equal(points(true, 0, 20_000, 1), 500);
   assert.equal(points(true, 10_000, 20_000, 3), 950);
 });
+
+test('the quiz asks only about what the tutorial and the site panels show', () => {
+  const taught = /^(fit-|terrain-|compare-|mission-why$|band-green$|band-blue$|site-place$|terrain$|azimuth$)/;
+  const qs = buildQuiz(bundle);
+  for (const q of qs) assert.match(q.id, taught, q.id);
+  const place = qs.find((q) => q.id === 'site-place');
+  if (place) assert.equal(place.options[place.correct], 'Taurus–Littrow valley');
+});

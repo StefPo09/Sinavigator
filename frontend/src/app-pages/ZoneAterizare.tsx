@@ -6,15 +6,18 @@ import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { LANDING_SITES } from '@/lib/data/landingSites';
 import { localSkyDirection, siteSkyAt } from '@/lib/logic/bundleEphemeris';
+import { FlightTitle } from '../components/shared/FlightTitle';
 import { TimeBar } from '../components/shared/TimeBar';
+import { LoadTask } from '../components/shared/LoadTask';
 import { webglAvailable } from '../components/shared/three-utils';
 import type { WS } from '../components/shared/types';
+import { prefetchSiteTerrain } from '../components/suprafata/siteTerrain';
 import type { MoonModelState } from '../components/zone/MoonGlobe';
-import { SiteInspector } from '../components/zone/SiteInspector';
+import { fmtLat, fmtLon, SiteInspector } from '../components/zone/SiteInspector';
 
 const MoonGlobe = dynamic(() => import('../components/zone/MoonGlobe'), {
   ssr: false,
-  loading: () => <p className="scene-loading">Preparing the lunar globe…</p>,
+  loading: () => <LoadTask label="Preparing the lunar globe" />,
 });
 
 /** Size of public/3d-models/moon.glb on disk (not measured HTTP traffic). */
@@ -27,6 +30,11 @@ export function ZoneAterizareView({ ws }: { ws: WS }) {
   useEffect(() => {
     if (gl === false && flight === 'site') arrive();
   }, [gl, flight, arrive]);
+  // the terrain downloads during the descent, so the loading screen after it is short
+  const descending = flight === 'site' ? (ws.landing?.id ?? null) : null;
+  useEffect(() => {
+    if (descending) prefetchSiteTerrain(descending, ws.quality);
+  }, [descending, ws.quality]);
 
   const focus = ws.landing;
   const sky = focus ? siteSkyAt(ws.bundle, focus.id, ws.timeMs) : null;
@@ -46,6 +54,9 @@ export function ZoneAterizareView({ ws }: { ws: WS }) {
     <div className="atlas-grid">
       <section className="scene-frame" aria-label="Lunar globe">
         <div className="scene-view">
+          {ws.flight === 'site' && focus && (
+            <FlightTitle eyebrow="Descent to the surface" title={focus.name} detail={`${focus.mission.split(' · ')[2] ?? ''} · ${fmtLat(focus.latDeg)}, ${fmtLon(focus.lonDeg)}`} />
+          )}
           {gl === false ? (
             <div className="scene-fallback">
               <p>
@@ -68,15 +79,11 @@ export function ZoneAterizareView({ ws }: { ws: WS }) {
             />
           ) : null}
           {gl && loading && (
-            <div className="globe-loading" role="status">
-              <p>Loading the LRO lunar relief</p>
-              <div className="load-bar" aria-hidden="true">
-                <span style={{ width: moonModel.state === 'loading' && moonModel.pct != null ? `${moonModel.pct}%` : '0%' }} />
-              </div>
-              <p className="mono small">
-                {moonModel.state === 'loading' && moonModel.pct != null ? `${moonModel.pct} % of ${MOON_GLB_MB} MB` : `${MOON_GLB_MB} MB · first load only, then kept for the session`}
-              </p>
-            </div>
+            <LoadTask
+              label="Loading the LRO lunar relief"
+              pct={moonModel.state === 'loading' ? moonModel.pct : null}
+              detail={`${MOON_GLB_MB} MB · first load only, then kept for the session`}
+            />
           )}
           {gl && !loading && (
             <div className="scene-caption">

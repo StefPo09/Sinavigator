@@ -47,14 +47,14 @@ export function TransferDiagram({ transfer, progress }: { transfer: Transfer; pr
       <circle cx={sx} cy={sy} r="6" fill="#ffc77d" />
       <text x={sx} y={sy - 16} fill="#ffc77d" textAnchor="middle">To the Sun</text>
       <polyline points={lunarArc} fill="none" stroke="#6a7787" strokeWidth="1.4" strokeDasharray="4 7" />
-      <polyline points={trajectory} fill="none" stroke="#d8f479" strokeWidth="1.6" strokeOpacity=".76" />
+      <polyline points={trajectory} fill="none" stroke="#d6d9dc" strokeWidth="1.6" strokeOpacity=".76" />
       <circle cx={ex} cy={ey} r="15" fill={`url(#${id}-earth)`} />
       <text x={ex} y={ey - 24} fill="#afd8f5" textAnchor="middle">Earth</text>
       <circle cx={mx} cy={my} r="10" fill={`url(#${id}-moon)`} />
       <text x={mx + 16} y={my + 4} fill="#e0e5ed">Moon</text>
-      <circle cx={cx} cy={cy} r="9" fill="#d8f479" opacity=".20" />
-      <circle cx={cx} cy={cy} r="4" fill="#ecffa9" stroke="#172019" strokeWidth="1" />
-      <text x={Math.max(ex + 27, cx)} y={cy + 29} fill="#d8f479" textAnchor="middle">Craft</text>
+      <circle cx={cx} cy={cy} r="9" fill="#d6d9dc" opacity=".20" />
+      <circle cx={cx} cy={cy} r="4" fill="#ffffff" stroke="#0a0f1c" strokeWidth="1" />
+      <text x={Math.max(ex + 27, cx)} y={cy + 29} fill="#d6d9dc" textAnchor="middle">Craft</text>
     </svg>
   );
 }

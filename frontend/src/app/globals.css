@@ -4,18 +4,20 @@
    apoi componentele pe secțiuni. Fără straturi de override la final. Vezi DESIGN.md. */
 
 :root {
-  --bg: #0b0e12;
-  --surface: #11161c;
-  --surface-2: #171e26;
-  --surface-3: #1f2832;
-  --scene: #05070a;
-  --rule: #222b35;
-  --rule-2: #333f4c;
-  --text: #eef1ec;
-  --muted: #a2adb8;
-  --faint: #7d8996;
-  --accent: #d8f479;
-  --accent-ink: #11160a;
+  --bg: #070b14;
+  --surface: #0d1320;
+  --surface-2: #131a29;
+  --surface-3: #1b2335;
+  --scene: #03060c;
+  --rule: #1f2738;
+  --rule-2: #2f3a50;
+  --text: #eef1f4;
+  --muted: #a4adbb;
+  --faint: #7e889a;
+  /* silver from the logo mark (#a3a5a4 → #505356), lifted for contrast on navy */
+  --accent: #cdd0d2;
+  --accent-ink: #0a0f1c;
+  --silver: linear-gradient(160deg, #f0f1f2 0%, #bfc2c3 42%, #d6d8d9 58%, #9c9fa1 100%);
   --sun: #f2c14e;
   --earth: #7ab8f5;
   --both: #7fd1a6;
@@ -119,8 +121,8 @@ svg { display: block; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 0 14px; border: 1px solid var(--rule-2); border-radius: var(--r); background: var(--surface-2); font-weight: 500; font-size: 14px; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
 .btn:hover:not(:disabled) { border-color: var(--muted); background: var(--surface-3); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
-.btn.primary:hover:not(:disabled) { background: #e6fa9f; border-color: #e6fa9f; }
+.btn.primary { background: var(--silver); border-color: #c4c7c9; color: var(--accent-ink); font-weight: 600; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 1px 0 rgba(0, 0, 0, 0.4); }
+.btn.primary:hover:not(:disabled) { filter: brightness(1.08); border-color: #e4e6e7; }
 .btn.quiet { background: none; }
 .btn.wide { width: 100%; min-height: 44px; }
 .btn.sm { min-height: 32px; padding: 0 10px; font-size: 13px; }
@@ -188,18 +190,17 @@ svg { display: block; }
    la schimbarea perspectivei scena veche se dizolvă (estompare + supraexpunere + ușoară mărire),
    iar cea nouă apare din aceeași stare și se clarifică. */
 .in-flight .scene-caption, .in-flight .tableau-note, .in-flight .globe-label { opacity: 0; transition: opacity 0.35s; }
-.in-flight .inspector, .in-flight .timeline, .in-flight .atlas-tools, .in-flight .atlas-head h1 { opacity: 0.4; pointer-events: none; transition: opacity 0.5s; }
 .scene-view > .s3-host, .scene-view > .scene-loading { transform-origin: 50% 50%; }
-.is-swapping .scene-view > .s3-host, .is-swapping .scene-view > .scene-loading { filter: blur(14px) brightness(1.35); transform: scale(1.06); opacity: 0.65; transition: filter 0.34s ease-in, transform 0.34s ease-in, opacity 0.34s ease-in; }
+.is-swapping .scene-view > .s3-host, .is-swapping .scene-view > .scene-loading { filter: blur(6px) brightness(1.8); transform: scale(1.06); opacity: 0.6; transition: filter 0.5s ease-in, transform 0.5s ease-in, opacity 0.5s ease-in; }
 .is-swapping .inspector, .is-swapping .timeline, .is-swapping .atlas-head h1 { opacity: 0; transition: opacity 0.25s; }
-.stage-swap .scene-view > .s3-host { animation: scene-in 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.stage-swap .scene-view > .s3-host { animation: scene-in 1.3s cubic-bezier(0.16, 0.84, 0.24, 1) both; }
 .stage-swap .inspector, .stage-swap .timeline { animation: ui-in 0.6s 0.25s ease-out both; }
-@keyframes scene-in { from { filter: blur(14px) brightness(1.35); transform: scale(1.06); opacity: 0.65; } to { filter: none; transform: none; opacity: 1; } }
+@keyframes scene-in { from { filter: blur(6px) brightness(1.8); transform: scale(1.06); opacity: 0.6; } to { filter: none; transform: none; opacity: 1; } }
 @keyframes ui-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
-/* încărcarea globului: pe scenă, cu progresul real în bytes */
-.globe-loading { position: absolute; left: 50%; top: 50%; z-index: 2; transform: translate(-50%, -50%); width: min(320px, calc(100% - 48px)); display: grid; gap: 10px; justify-items: center; text-align: center; color: var(--muted); }
-.globe-loading > p:first-child { color: var(--text); font-weight: 500; }
+/* încărcarea scenelor 3D (sub cinematic, vizibilă după „Skip”) */
+.scene-loading-box { display: grid; gap: 10px; justify-items: center; width: min(320px, 100%); }
+.scene-loading-box > p:first-child { color: var(--text); font-weight: 500; }
 .load-bar { width: 100%; height: 2px; background: var(--rule-2); overflow: hidden; }
 .load-bar span { display: block; height: 100%; background: var(--accent); transition: width 0.2s linear; }
 
@@ -607,19 +608,36 @@ svg text { font-family: var(--mono), monospace; }
 .spacer { flex: 1; }
 @media (max-width: 767px) { .nav-learn, .preload { width: auto; } .nav-foot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; } }
 
-/* ── guided tour: spotlight on the real interface ── */
-.tour { position: fixed; inset: 0; z-index: 90; pointer-events: none; }
-.tour-dim { position: absolute; inset: 0; background: rgba(4, 6, 9, 0.62); pointer-events: auto; }
-.tour-spot { position: fixed; border-radius: 6px; box-shadow: 0 0 0 2px var(--accent), 0 0 0 9999px rgba(4, 6, 9, 0.62); transition: top 0.35s ease, left 0.35s ease, width 0.35s ease, height 0.35s ease; pointer-events: none; }
-.tour-card { position: fixed; width: min(360px, calc(100vw - 32px)); display: grid; gap: 10px; padding: 18px; border: 1px solid var(--rule-2); border-radius: 8px; background: var(--surface-2); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.55); pointer-events: auto; }
-.tour-card.centred { top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(460px, calc(100vw - 32px)); }
-.tour-card h2 { font-size: 19px; font-weight: 600; }
-.tour-card p:not(.eyebrow) { font-size: 14.5px; }
-.tour-dots { display: flex; gap: 5px; }
-.tour-dots i { width: 18px; height: 3px; border-radius: 2px; background: var(--rule-2); }
+/* ── tutorial: the control to use glows (buttons also bob); a small tip sits beside it ── */
+/* areas (scene, timeline): an outline is painted over their content (a canvas would hide a shadow) */
+[data-tour='area'] { outline: 2px solid rgba(225, 228, 231, 0.95); outline-offset: -3px; animation: tour-outline 1.6s ease-in-out infinite; }
+@keyframes tour-outline { 50% { outline-color: rgba(225, 228, 231, 0.3); outline-offset: -7px; } }
+[data-tour='button'] { border-radius: 6px; animation: tour-ring 1.6s ease-out infinite, tour-bob 1.6s ease-in-out infinite; }
+
+@keyframes tour-ring {
+  0% { box-shadow: 0 0 0 0 rgba(225, 228, 231, 0.75), 0 0 0 2px rgba(225, 228, 231, 0.9); }
+  70% { box-shadow: 0 0 0 14px rgba(225, 228, 231, 0), 0 0 0 2px rgba(225, 228, 231, 0.9); }
+  100% { box-shadow: 0 0 0 0 rgba(225, 228, 231, 0), 0 0 0 2px rgba(225, 228, 231, 0.9); }
+}
+@keyframes tour-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.tour-tip { position: fixed; z-index: 90; width: min(300px, calc(100vw - 32px)); display: grid; gap: 8px; padding: 14px 16px; border: 1px solid #5d6573; border-radius: 10px; background: rgba(19, 26, 41, 0.96); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5); backdrop-filter: blur(6px); transition: top 0.35s ease, left 0.35s ease; animation: tip-in 0.35s ease-out both; }
+.tour-tip.docked { right: 20px; bottom: 20px; width: min(380px, calc(100vw - 32px)); }
+.tour-tip h2 { font-size: 16px; font-weight: 600; }
+.tour-tip p:not(.eyebrow) { font-size: 13.5px; line-height: 1.5; color: var(--muted); }
+.tour-dots { display: flex; gap: 4px; }
+.tour-dots i { width: 14px; height: 3px; border-radius: 2px; background: var(--rule-2); }
 .tour-dots i.done { background: var(--muted); }
 .tour-dots i.on { background: var(--accent); }
 .tour-actions { margin-top: 2px; }
+.tour-wait { font: 500 12px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); animation: tour-blink 1.6s ease-in-out infinite; }
+@keyframes tour-blink { 50% { opacity: 0.45; } }
+@keyframes tip-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (max-width: 767px) { .tour-tip { left: 16px !important; right: 16px; top: auto !important; bottom: 16px; width: auto; } }
+@media (prefers-reduced-motion: reduce) {
+  [data-tour='area'] { animation: none; }
+  [data-tour='button'] { animation: none; box-shadow: 0 0 0 2px rgba(225, 228, 231, 0.9); }
+  .tour-tip, .tour-wait { animation: none; transition: none; }
+}
 
 /* ── Lunar Quiz: timed multiple choice ── */
 .quiz { position: fixed; inset: 0; width: 100%; max-width: none; height: 100%; max-height: none; margin: 0; padding: clamp(16px, 3vw, 40px); border: 0; display: none; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; gap: 16px; overflow: auto; color: var(--text); background: radial-gradient(ellipse at 50% 0%, #1a2230 0, var(--bg) 70%); }
@@ -659,4 +677,41 @@ html:has(.quiz[open]) { overflow: hidden; }
 .quiz-reveal { display: grid; gap: 10px; justify-items: start; padding: 16px 18px; border: 1px solid var(--rule-2); border-radius: 10px; background: var(--surface); }
 .quiz-reveal .ok b { color: var(--ok); font-size: 20px; }
 .quiz-reveal .bad b { color: var(--bad); font-size: 20px; }
-@media (prefers-reduced-motion: reduce) { .quiz-opt, .tour-spot, .tour-card { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .quiz-opt { transition: none; } }
+
+/* harta Moon Trek din panoul locului */
+.trek-map { display: grid; gap: 8px; }
+.trek-frame { position: relative; height: 200px; overflow: hidden; border: 1px solid var(--rule); border-radius: var(--r); background: #0a0c0f; }
+.trek-frame img { position: absolute; width: 256px; height: 256px; max-width: none; filter: contrast(1.08); user-select: none; pointer-events: none; }
+.trek-pin { position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border: 2px solid var(--accent); border-radius: 50%; box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.55), 0 0 12px rgba(205, 208, 210, 0.6); }
+.trek-pin::after { content: ''; position: absolute; left: 50%; top: 50%; width: 3px; height: 3px; margin: -1.5px 0 0 -1.5px; border-radius: 50%; background: var(--accent); }
+.trek-north { position: absolute; right: 8px; top: 6px; font: 500 10.5px var(--mono); color: var(--text); text-shadow: 0 1px 3px #000; }
+.trek-scale { position: absolute; left: 8px; bottom: 8px; padding-top: 3px; border-top: 2px solid var(--text); font: 500 10.5px var(--mono); color: var(--text); text-shadow: 0 1px 3px #000; box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.6); }
+.trek-links { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.trek-links .text-link { font-size: 13px; }
+.small-btn { padding: 4px 9px; font: 500 11.5px var(--mono); }
+
+/* misiunea: legătura cu explorarea de azi */
+.mission-today { display: grid; gap: 8px; margin-top: 18px; padding: 14px 16px; border-left: 2px solid var(--accent); background: var(--surface); }
+.mission-today p:not(.eyebrow) { max-width: 72ch; color: var(--muted); }
+
+/* planner: descărcarea comparației */
+.planner-download { display: grid; gap: 6px; justify-items: start; margin-top: 16px; }
+.planner-download p { max-width: 72ch; }
+
+/* ── zborurile camerei: vignetare și titlul destinației ── */
+.flight-overlay { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.flight-vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, transparent 45%, rgba(0, 0, 0, 0.7) 100%); animation: flight-fade 1.2s ease-out both; }
+.flight-title { position: absolute; left: 6%; bottom: 16%; display: grid; gap: 6px; text-shadow: 0 2px 18px rgba(0, 0, 0, 0.8); }
+.flight-eyebrow { font: 500 11px var(--mono); letter-spacing: 0.28em; text-transform: uppercase; color: var(--accent); animation: flight-rise 0.9s 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.flight-name { font: 500 clamp(30px, 4.4vw, 56px) / 1.02 var(--sans); letter-spacing: -0.02em; color: var(--text); animation: flight-name 1.6s 0.5s cubic-bezier(0.16, 0.84, 0.24, 1) both; }
+.flight-detail { font: 13px var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); animation: flight-rise 0.9s 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+@keyframes flight-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes flight-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes flight-name { from { opacity: 0; letter-spacing: 0.14em; } to { opacity: 1; letter-spacing: -0.02em; } }
+/* during a flight the rest of the page steps back so the scene carries the moment */
+/* animation: none, or the page's entrance animation would keep holding them at full opacity */
+.in-flight .inspector, .in-flight .timeline, .in-flight .atlas-tools, .in-flight .atlas-head h1 { opacity: 0.12; pointer-events: none; animation: none; transition: opacity 0.6s; }
+@media (prefers-reduced-motion: reduce) {
+  .flight-vignette, .flight-eyebrow, .flight-name, .flight-detail { animation: none; }
+}

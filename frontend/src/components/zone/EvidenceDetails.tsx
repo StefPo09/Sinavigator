@@ -54,9 +54,10 @@ export function IntervalTable({ sides }: { sides: Side[] }) {
 }
 
 const EXTERNAL = [
-  { name: 'LROC QuickMap', url: 'https://quickmap.lroc.asu.edu/', use: 'Inspecting the sites and identifying terrain/image products (those products are cited).' },
-  { name: 'NASA Moon Trek', url: 'https://trek.nasa.gov/moon/', use: 'Lunar map and layers for locating the Apollo sites.' },
-  { name: 'JPL Horizons', url: 'https://ssd.jpl.nasa.gov/horizons/', use: 'Source of the Sun and Earth ephemerides in the Apollo set.' },
+  { name: 'LROC QuickMap', url: 'https://quickmap.lroc.asu.edu/', use: 'Inspecting the sites and identifying terrain/image products (those products are cited); linked from each site panel.' },
+  { name: 'NASA Moon Trek', url: 'https://trek.nasa.gov/moon/', use: 'Site maps on the Moon page: the LRO WAC global mosaic, streamed live from the Moon Trek WMTS tile service.' },
+  { name: 'JPL Horizons', url: 'https://ssd.jpl.nasa.gov/horizons/', use: 'Sun and Earth ephemerides in the Apollo set, and the geocentric Moon and Sun positions for the Earth–Moon transfer replay (queried live, hourly samples).' },
+  { name: 'Canadian Space Agency · Moon exploration', url: 'https://www.asc-csa.gc.ca/eng/astronomy/moon-exploration/', use: 'Context on present-day lunar exploration (Artemis and Canada’s role), linked from the mission section.' },
   { name: 'LROC coordinates of the Apollo modules', url: 'https://lroc.im-ldi.com/data/support/downloads/2016_LROC_Coordinates_of_Human_Features.pdf', use: 'Latitude and longitude of the landing sites.' },
   { name: 'LROC Apollo 17 model', url: 'https://data.lroc.im-ldi.com/lroc/view_rdr/NAC_DTM_APOLLO17', use: 'Source of the regional terrain in the Taurus–Littrow valley.' },
   { name: 'LROC Apollo 15 model', url: 'https://data.lroc.im-ldi.com/lroc/view_rdr_product/NAC_DTM_APOLLO15', use: 'Source of the terrain near the Hadley–Apennine landing site.' },
@@ -163,10 +164,20 @@ function MethodsBody({ bundle, origin, reason, warnings, sides }: { bundle: Bund
           <li>A geometrically visible Earth does not guarantee a radio link.</li>
           <li>Eclipses and occultations are not modelled. A finite terrain profile is not a complete horizon.</li>
           <li>The results are preliminary comparisons, not mission analysis or a landing-safety assessment. A study point is not a safe or approved landing site.</li>
+          <li>
+            The optional Earth–Moon transfer replay (on the Surface page) is an idealised model: a 200 km parking orbit assumed to be in the right plane, departure from its sunward point,
+            and a Hohmann-like ellipse whose far end meets the Moon. It is not a real launch window, trajectory or mission plan (no launch from the ground, plane change, lunar
+            capture or descent). Sun and Moon positions come from JPL Horizons sampled hourly and interpolated; if Horizons cannot be reached, simplified analytic formulas
+            (≈ 0.5°) are used instead, and the replay says which.
+          </li>
+          <li>The site maps use the LRO WAC global mosaic (≈ 100 m per pixel) in an equirectangular projection: shapes are stretched east–west away from the equator, and small features near the landing sites are not resolved.</li>
         </ul>
 
         <h3>External resources</h3>
-        <p className="muted small">Listed as citations and planned sources. The page queries none of them live, and none is integrated unless the data file declares it above.</p>
+        <p className="muted small">
+          Queried live while you use the page: JPL Horizons (through this site&apos;s own server, for the Earth–Moon transfer replay) and the NASA Moon Trek tile service (site maps). The
+          visibility windows themselves come only from the data file declared above.
+        </p>
         <ul className="ext">
           {EXTERNAL.map((r) => (
             <li key={r.url}>
@@ -182,7 +193,8 @@ function MethodsBody({ bundle, origin, reason, warnings, sides }: { bundle: Bund
 
         <h3>Credits</h3>
         <p className="muted small">
-          Interface built with Next.js, React and TypeScript; 3D scenes with Three.js; Space Grotesk and JetBrains Mono fonts (SIL Open Font License) via Fontsource. {TEXTURE_CREDITS}
+          Interface built with Next.js, React and TypeScript; 3D scenes with Three.js; Space Grotesk and JetBrains Mono fonts (SIL Open Font License) via Fontsource. {TEXTURE_CREDITS}{' '}
+          Site maps: LRO WAC global mosaic, NASA/GSFC/Arizona State University, served by NASA Moon Trek (JPL). Transfer-replay positions: NASA/JPL Horizons (DE441).
         </p>
         <h3>AI statement</h3>
         <p className="small">{AI_DISCLOSURE}</p>
@@ -191,4 +203,5 @@ function MethodsBody({ bundle, origin, reason, warnings, sides }: { bundle: Bund
   );
 }
 
-export const AI_DISCLOSURE = 'The interface code was written with AI assistance (Claude, Anthropic) and reviewed by the team. The explanations in the app are template sentences filled with computed values; no language model runs in the app.';
+export const AI_DISCLOSURE =
+  'AI tools used in development: DeepSeek V4.1 Flash (1017), and Claude (Anthropic, through Claude Code) for parts of the interface code (including the camera flights, the Horizons and Moon Trek integration, the tutorial and the theme). All generated code was reviewed and tested by the team. No language model runs in the app: the explanations are template sentences filled with computed values, and the quiz questions are built from the data file.';

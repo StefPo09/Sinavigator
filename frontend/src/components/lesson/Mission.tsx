@@ -254,6 +254,17 @@ export function Mission({ ws }: { ws: WS }) {
           )}
         </li>
       </ol>
+
+      <aside className="mission-today">
+        <p className="eyebrow">Why it matters today</p>
+        <p>
+          The same question — when are the Sun and the Earth both above the horizon? — shapes real plans for returning to the Moon: power for rovers and astronauts, and a direct radio link home. Crewed
+          lunar exploration has restarted under Artemis, with international partners such as the Canadian Space Agency.
+        </p>
+        <a className="text-link" href="https://www.asc-csa.gc.ca/eng/astronomy/moon-exploration/" target="_blank" rel="noreferrer">
+          Moon exploration and Canada’s role — Canadian Space Agency ↗
+        </a>
+      </aside>
     </section>
   );
 }

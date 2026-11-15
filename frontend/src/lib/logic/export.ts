@@ -6,7 +6,7 @@ import type { Fit, Model, Segment } from './derive.ts';
 import { RANKING_RULE, type AltOption } from './recommend.ts';
 
 /** Kept in sync with the in-app disclosure (EvidenceDetails.AI_DISCLOSURE). */
-const AI_DISCLOSURE = 'Interface code written with AI assistance (Claude, Anthropic) and reviewed by the team. In-app explanations are template sentences filled with computed values; no language model runs in the app.';
+const AI_DISCLOSURE = 'AI tools used in development: DeepSeek V4.1 Flash (1017), and Claude (Anthropic, through Claude Code) for parts of the interface code; all generated code was reviewed and tested by the team. In-app explanations are template sentences filled with computed values; no language model runs in the app.';
 
 const iso = (ms: number) => new Date(Math.round(ms)).toISOString();
 

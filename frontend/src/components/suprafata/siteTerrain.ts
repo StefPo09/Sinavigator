@@ -24,11 +24,80 @@ export interface SiteTerrain {
 
 const cache = new Map<string, Promise<SiteTerrain | null>>();
 
-async function loadGlb(url: string): Promise<THREE.Object3D> {
+/** Download progress (0–100, bytes of the three tiles) per site and quality, for loading screens. */
+const progress = new Map<string, number>();
+const progressSubs = new Set<() => void>();
+export const terrainPct = (id: string, quality: Quality) => progress.get(`${id}|${quality}`) ?? null;
+export function onTerrainProgress(f: () => void) {
+  progressSubs.add(f);
+  return () => {
+    progressSubs.delete(f);
+  };
+}
+
+/** One download per tile file, shared by the early prefetch and the loader; `got` counts bytes received. */
+interface Download {
+  bytes: Promise<ArrayBuffer>;
+  /** uncompressed size from HEAD (compressed responses carry none), 0 if unknown */
+  size: Promise<number>;
+  got: number;
+}
+const downloads = new Map<string, Download>();
+const byteSubs = new Set<() => void>();
+
+function download(url: string): Download {
+  let d = downloads.get(url);
+  if (!d) {
+    // the size is asked first: queued behind large downloads, a HEAD would answer too late
+    const size = fetch(url, { method: 'HEAD' })
+      .then((r) => Number(r.headers.get('content-length')) || 0)
+      .catch(() => 0);
+    const entry: Download = { got: 0, size, bytes: Promise.resolve(new ArrayBuffer(0)) };
+    entry.bytes = (async () => {
+      await size;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
+      const reader = res.body?.getReader();
+      if (!reader) return res.arrayBuffer();
+      const chunks: Uint8Array[] = [];
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        entry.got += value.byteLength;
+        for (const f of byteSubs) f();
+      }
+      const out = new Uint8Array(entry.got);
+      let at = 0;
+      for (const c of chunks) {
+        out.set(c, at);
+        at += c.byteLength;
+      }
+      return out.buffer;
+    })();
+    entry.bytes.catch(() => downloads.delete(url));
+    downloads.set(url, entry);
+    d = entry;
+  }
+  return d;
+}
+
+const tileUrls = (id: string, quality: Quality) => ['close', 'near', 'far'].map((n) => `/3d-models/terrain/${id}/${n}-${quality}.glb`);
+
+/**
+ * Starts downloading a site's terrain tiles without parsing them (parsing is the heavy part),
+ * so a camera flight can run while the bytes arrive. The loader later reuses the same download.
+ */
+export function prefetchSiteTerrain(id: string, quality: Quality) {
+  for (const u of tileUrls(id, quality)) void download(u).bytes.catch(() => undefined);
+}
+
+async function parseGlb(url: string): Promise<THREE.Object3D> {
   const [{ GLTFLoader }, { MeshoptDecoder }] = await Promise.all([import('three/addons/loaders/GLTFLoader.js'), import('three/addons/libs/meshopt_decoder.module.js')]);
   const l = new GLTFLoader();
   l.setMeshoptDecoder(MeshoptDecoder);
-  return (await l.loadAsync(url)).scene;
+  const data = await download(url).bytes;
+  return (await l.parseAsync(data, url.slice(0, url.lastIndexOf('/') + 1))).scene;
 }
 
 /** Detaliu de regolit la scară mică (în coordonate de lume), peste culoarea de bază; fără repetiție vizibilă (două scări). */
@@ -62,7 +131,24 @@ export function loadSiteTerrain(id: string, quality: Quality): Promise<SiteTerra
       const br = await fetch(`${base}/build.json`);
       if (!br.ok || !(br.headers.get('content-type') ?? '').includes('json')) return null;
       const build = (await br.json()) as SiteBuild;
-      const [close, near, far] = await Promise.all([loadGlb(`${base}/close-${quality}.glb`), loadGlb(`${base}/near-${quality}.glb`), loadGlb(`${base}/far-${quality}.glb`)]);
+      const urls = tileUrls(id, quality);
+      // uncompressed sizes: the same unit as the decompressed bytes counted while downloading
+      const sizes = await Promise.all(urls.map((u) => download(u).size));
+      const emit = () => {
+        if (!sizes.every((s) => s > 0)) return;
+        const got = urls.reduce((a, u, i) => a + Math.min(download(u).got, sizes[i]), 0);
+        progress.set(key, Math.min(100, Math.round((100 * got) / sizes.reduce((a, b) => a + b))));
+        for (const f of progressSubs) f();
+      };
+      byteSubs.add(emit);
+      emit();
+      let tiles: THREE.Object3D[];
+      try {
+        tiles = await Promise.all(urls.map(parseGlb));
+      } finally {
+        byteSubs.delete(emit);
+      }
+      const [close, near, far] = tiles;
       const detail = groundTex('diff');
       const imaged = (root: THREE.Object3D, detailStrength: number) =>
         root.traverse((o) => {
